@@ -334,7 +334,11 @@ class CanvasGUI(QGraphicsScene):
                 if isinstance(item, ElementGUI):
                     item.updateIcon()
                 if isinstance(item, QGraphicsTextItem):
-                    item.setDefaultTextColor(Qt.white)
+                    global app_theme
+                    if app_theme == "dark":
+                        item.setDefaultTextColor(Qt.white)
+                    else:
+                        item.setDefaultTextColor(Qt.black)
             return True
         else:
             return QGraphicsScene.event(self, event)

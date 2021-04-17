@@ -17,3 +17,6 @@ enlaces son capaces de seguir el movimiento que realizan los elementos a los que
 También se ha implementado una primera versión del archivo de guardado, así como una función de lectura de dichos
 archivos que permite recuperar los diagramas creados anteriormente. Este archivo de guardado está escrito en lenguaje
 JSON.
+
+Por último, se ha añadido un modo oscuro a la aplicación para dar al usuario la posibilidad de poder alternar entre
+los dos temas de forma rápida y sencilla.
