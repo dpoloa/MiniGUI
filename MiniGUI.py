@@ -26,7 +26,7 @@ import json
 class ElementGUI(QGraphicsPixmapItem):
     """"Class for main elements"""
     def __init__(self, x, y, tool):
-        # Initial atributes
+        # Initial attributes
         self.images = imagesMiniGUI()
         self.tool = tool
         self.name = ""
@@ -204,11 +204,9 @@ class CanvasGUI(QGraphicsScene):
         # Separate code depending on item's class
         if isinstance(item, ElementGUI):
             for scene_item in self.items():
-                if isinstance(scene_item, LinkGUI):
-                    items_linked = scene_item.items
-                    if item.name in items_linked:
-                        links_to_remove.append(scene_item.name)
-                        self.removeItem(scene_item)
+                if isinstance(scene_item, LinkGUI) and scene_item.name in item.links:
+                    links_to_remove.append(scene_item.name)
+                    self.removeItem(scene_item)
 
         if isinstance(item, LinkGUI):
             links_to_remove.append(item.name)
@@ -216,10 +214,8 @@ class CanvasGUI(QGraphicsScene):
         # Update of all elements related to the to-be-deleted item
         for link in links_to_remove:
             for scene_item in self.items():
-                if isinstance(scene_item, ElementGUI):
-                    item_links = scene_item.links
-                    if link in item_links:
-                        item_links.remove(link)
+                if isinstance(scene_item, ElementGUI) and link in scene_item.links:
+                    scene_item.links.remove(link)
 
         self.removeItem(item)
 
@@ -233,9 +229,8 @@ class CanvasGUI(QGraphicsScene):
 
         links_list = []
         for scene_item in self.items():
-            if isinstance(scene_item, LinkGUI):
-                if scene_item.name in item_links:
-                    links_list.append(scene_item)
+            if isinstance(scene_item, LinkGUI) and scene_item.name in item_links:
+                links_list.append(scene_item)
 
         for link in links_list:
             for link_item_name in link.items:
@@ -400,7 +395,7 @@ class MiniGUI(QMainWindow):
         self.tool_buttons = {}
         self.active_tool = None
 
-        # Scene variables inicialization
+        # Scene variables initialization
         self.canvas = QGraphicsView()
         self.scene = CanvasGUI()
 
