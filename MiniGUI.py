@@ -393,6 +393,9 @@ class MiniGUI(QMainWindow):
         # Program configuration setting
         self.settings = None
 
+        # File attribute (used for saving process)
+        self.file = None
+
         # Main window attributes settings
         self.menu_bar = self.menuBar()
         self.tool_bar = self.addToolBar("Tool Bar")
@@ -438,6 +441,7 @@ class MiniGUI(QMainWindow):
         new_action = QAction("New", self)
         open_action = QAction("Open", self)
         save_action = QAction("Save", self)
+        save_as_action = QAction("Save as", self)
         quit_action = QAction("Quit", self)
         undo_action = QAction("Undo", self)
         redo_action = QAction("Redo", self)
@@ -465,6 +469,7 @@ class MiniGUI(QMainWindow):
         new_action.setStatusTip("Create a new project")
         open_action.setStatusTip("Open an existing project")
         save_action.setStatusTip("Save the current project")
+        save_as_action.setStatusTip("Save the current project as another")
         quit_action.setStatusTip("Exit MiniGUI")
         undo_action.setStatusTip("Undo step")
         redo_action.setStatusTip("Redo step")
@@ -478,6 +483,7 @@ class MiniGUI(QMainWindow):
         new_action.triggered.connect(self.newProject)
         open_action.triggered.connect(self.openProject)
         save_action.triggered.connect(self.saveProject)
+        save_as_action.triggered.connect(self.saveProject)
         quit_action.triggered.connect(qApp.exit)
         dark_theme_action.toggled.connect(lambda: self.changeStyle())
         about_action.triggered.connect(self.showAbout)
@@ -486,6 +492,7 @@ class MiniGUI(QMainWindow):
         file_menu.addAction(new_action)
         file_menu.addAction(open_action)
         file_menu.addAction(save_action)
+        file_menu.addAction(save_as_action)
         file_menu.addSeparator()
         file_menu.addAction(quit_action)
         edit_menu.addAction(undo_action)
@@ -558,19 +565,27 @@ class MiniGUI(QMainWindow):
         # Ejecutamos el diálogo
         dialog.exec_()
         """
-        dialogfilename = QFileDialog.getSaveFileName(self, "Save file as", os.path.expanduser("~"),
-                                                     "Mininet topology (*.mn);;All files (*)", "")
+        if self.file is None or self.sender().text() == "Save as":
+            # Podemos usar la forma larga o usar el método estático proporcionado por el paquete
+            dialogfilename = QFileDialog.getSaveFileName(self, "Save file as", os.path.expanduser("~"),
+                                                         "Mininet topology (*.mn);;All files (*)", "")
+            # Si hemos creado un archivo, llamamos a la función de la escena y guardamos el archivo
+            if dialogfilename[0] != "":
+                filename = str(dialogfilename[0])
+                # Añadimos a la ubicación del archivo su extensión si no está añadida
+                if dialogfilename[1].startswith("Mininet") and not dialogfilename[0].endswith(".mn"):
+                    filename = filename + ".mn"
+                # Guardamos la ubicación como atributo del sistema y abrimos el documento
+                self.file = filename
+                file = open(filename, "w")
+            else:
+                return
+        else:
+            file = open(self.file, "w")
 
-        if dialogfilename[0] != "":
-            filename = str(dialogfilename[0])
-            if dialogfilename[1].startswith("Mininet") and not dialogfilename[0].endswith(".mn"):
-                filename = filename + ".mn"
-                print(filename)
-
-            file = open(filename, "w")
-            file_dictionary = self.scene.saveScene()
-            file.write(json.dumps(file_dictionary, sort_keys=True, indent=4, separators=(',', ':')))
-            file.close()
+        file_dictionary = self.scene.saveScene()
+        file.write(json.dumps(file_dictionary, sort_keys=True, indent=4, separators=(',', ':')))
+        file.close()
 
     def manageTools(self, tool_name):
         """Method to check up the current tool and manage the buttons"""
