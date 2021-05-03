@@ -856,19 +856,19 @@ def imagesMiniGUI():
     global app_theme
     if app_theme == "light":
         return {
-            "House": "house.png",
-            "Car": "car.png",
-            "Link": "cable.png",
-            "Select": "select.png",
-            "Delete": "delete.png"
+            "House": "./images_00_02/house.png",
+            "Car": "./images_00_02/car.png",
+            "Link": "./images_00_02/cable.png",
+            "Select": "./images_00_02/select.png",
+            "Delete": "./images_00_02/delete.png"
         }
     else:
         return {
-            "House": "house_white.png",
-            "Car": "car_white.png",
-            "Link": "cable_white.png",
-            "Select": "select_white.png",
-            "Delete": "delete_white.png"
+            "House": "./images_00_02/house_white.png",
+            "Car": "./images_00_02/car_white.png",
+            "Link": "./images_00_02/cable_white.png",
+            "Select": "./images_00_02/select_white.png",
+            "Delete": "./images_00_02/delete_white.png"
         }
 
 
