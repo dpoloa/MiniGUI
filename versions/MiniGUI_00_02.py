@@ -699,8 +699,8 @@ class MiniGUI(QMainWindow):
             self.setWindowTitle("MiniGUI - " + str(dialogfilename[0]).split("/")[-1])
             self.scene.loadScene(topology_data)
 
-    # WIP
     def saveProject(self):
+        # WIP: we can use a long method or a static method
         """
         dialog = QFileDialog(self)
         dialog.setWindowTitle("Save file as")

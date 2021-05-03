@@ -20,7 +20,6 @@ from PyQt5.QtWidgets import *
 import sys
 import os
 import json
-# import qdarkstyle
 
 
 class ElementGUI(QGraphicsPixmapItem):
@@ -56,8 +55,7 @@ class ElementGUI(QGraphicsPixmapItem):
 
     # Auxiliary functions
 
-    # Método a mejorar (debemos dejar que se siga viendo el icono, que pasa a estar un poco
-    # más azulado (u oscurecido)
+    # WIP
     @staticmethod
     def changePixmapColor(img):
         painter = QPainter(img)
@@ -252,7 +250,7 @@ class CanvasGUI(QGraphicsScene):
         self.new_link.updateName(name)
 
         # Updating of link information in both elements and link
-        self.new_link.addItemsLinked(orig_item.name, dest_item.name)
+        self.new_link.addNodesLinked(orig_item.name, dest_item.name)
         orig_item.addNewLink(name)
         dest_item.addNewLink(name)
 
@@ -384,7 +382,7 @@ class CanvasGUI(QGraphicsScene):
                 self.updateLinkItemInfo()
 
 
-# Clase creadora de la interfaz principal
+# Main class: main window of application
 class MiniGUI(QMainWindow):
     """Main class of the application. It holds all the structure along with the scene"""
     def __init__(self):
@@ -414,6 +412,7 @@ class MiniGUI(QMainWindow):
 
     # Application initialization functions
 
+    # WIP
     def setSettings(self):
         self.settings = QSettings('MiniGUI', 'settings')
         global app_theme
@@ -530,7 +529,7 @@ class MiniGUI(QMainWindow):
 
     # Scene-related functions
 
-    # To be completed
+    # WIP
     def newProject(self):
         self.scene.clear()
         for tool in self.scene.item_count:
@@ -551,18 +550,12 @@ class MiniGUI(QMainWindow):
     def saveProject(self):
         # WIP: we can use a long method or a static method
         """
-        # Creamos la ventana emergente que permite al usuario guardar el archivo
         dialog = QFileDialog(self)
-        # Definimos el nombre de la ventana
         dialog.setWindowTitle("Save file as")
-        # Dejamos que el usuario pueda elegir cualquier archivo (modo para guardar archivos)
         dialog.setFileMode(QFileDialog.AnyFile)
-        # Creamos los filtros necesarios
         dialog.setNameFilters({"Mininet topology (*.mn)", "All files (*)"})
         dialog.selectNameFilter("Mininet topology (*.mn)")
-        # Elegimos como directorio definitivo por defecto el $HOME
         dialog.setDirectory(os.path.expanduser("~"))
-        # Ejecutamos el diálogo
         dialog.exec_()
         """
         if self.file is None or self.sender().text() == "Save as":
