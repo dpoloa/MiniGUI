@@ -44,6 +44,8 @@ class NodeGUI(QGraphicsPixmapItem):
         self.icon = images[self.tool]
         self.image = QPixmap(self.icon).scaled(50, 50, Qt.KeepAspectRatio)
 
+        self.setPixmap(self.image)
+
         # Definition of offset to center image where user clicked
         offset = self.boundingRect().topLeft() - self.boundingRect().center()
         self.setOffset(offset.x(), offset.y())
@@ -856,19 +858,19 @@ def imagesMiniGUI():
     global app_theme
     if app_theme == "light":
         return {
-            "House": "house.png",
-            "Car": "car.png",
-            "Link": "cable.png",
-            "Select": "select.png",
-            "Delete": "delete.png"
+            "House": "./images/house.png",
+            "Car": "./images/car.png",
+            "Link": "./images/cable.png",
+            "Select": "./images/select.png",
+            "Delete": "./images/delete.png"
         }
     else:
         return {
-            "House": "house_white.png",
-            "Car": "car_white.png",
-            "Link": "cable_white.png",
-            "Select": "select_white.png",
-            "Delete": "delete_white.png"
+            "House": "./images/house_white.png",
+            "Car": "./images/car_white.png",
+            "Link": "./images/cable_white.png",
+            "Select": "./images/select_white.png",
+            "Delete": "./images/delete_white.png"
         }
 
 

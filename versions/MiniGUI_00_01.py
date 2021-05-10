@@ -250,7 +250,7 @@ class CanvasGUI(QGraphicsScene):
         self.new_link.updateName(name)
 
         # Updating of link information in both elements and link
-        self.new_link.addNodesLinked(orig_item.name, dest_item.name)
+        self.new_link.addItemsLinked(orig_item.name, dest_item.name)
         orig_item.addNewLink(name)
         dest_item.addNewLink(name)
 

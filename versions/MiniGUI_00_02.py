@@ -44,6 +44,8 @@ class NodeGUI(QGraphicsPixmapItem):
         self.icon = images[self.tool]
         self.image = QPixmap(self.icon).scaled(50, 50, Qt.KeepAspectRatio)
 
+        self.setPixmap(self.image)
+
         # Definition of offset to center image where user clicked
         offset = self.boundingRect().topLeft() - self.boundingRect().center()
         self.setOffset(offset.x(), offset.y())
