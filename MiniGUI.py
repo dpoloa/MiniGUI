@@ -900,16 +900,18 @@ def imagesMiniGUI():
     global app_theme
     if app_theme == "light":
         return {
-            "House": "./images/house.png",
-            "Car": "./images/car.png",
+            "Host": "./images/laptop.png",
+            "Switch": "./images/switch.png",
+            "Router": "./images/router.png",
             "Link": "./images/cable.png",
             "Select": "./images/select.png",
             "Delete": "./images/delete.png"
         }
     else:
         return {
-            "House": "./images/house_white.png",
-            "Car": "./images/car_white.png",
+            "Host": "./images/laptop.png",
+            "Switch": "./images/switch.png",
+            "Router": "./images/router.png",
             "Link": "./images/cable_white.png",
             "Select": "./images/select_white.png",
             "Delete": "./images/delete_white.png"
