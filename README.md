@@ -5,9 +5,27 @@ provisional)
 El objetivo de este Trabajo de Fin de Grado es crear una GUI (*Graphical User Interface*, por sus siglas en inglés) o 
 Interfaz Gráfica de Usuario que permita al usuario poder crear una red de arquitectura de ordenadores a su gusto con
 los elementos básicos: hubs, switches, routers y ordenadores/hosts (por ahora, con vistas a añadir controladores SDN en
-el futuro). Este programa está escrito en Python, y usa como paquete gráfico Qt, con su adapatación al lenguaje usado 
+el futuro). Este programa está escrito en Python, y usa como paquete gráfico Qt, con su adaptación al lenguaje usado 
 como PyQt5.
 ## Historial de versiones
+#### Versión 00.00.03
+En esta versión introducimos algunos de los elementos finales que estarán presentes en la versión 00.01.00: ordenadores, 
+switches y routers. Con estos añadidos aparece una nueva función que permite o no la unión entre nodos del sistema (por 
+ahora no se permiten, por ejemplo, uniones entre ordenadores). Además, se han realizado los siguientes cambios:
+* Se ha modificado la forma que tiene el programa de hacer aparecer un nodo cuando el usuario hacía click en la escena. 
+  Además, para poder mantener la funcionalidad de versiones anteriores, otras funciones se han visto modificadas.
+  
+* Se ha corregido un error que provocaba que las etiquetas de los nodos saliesen descentradas.
+
+* Se ha mejorado la comprobación de enlace entre dos nodos. En la anterior versión no se comprobaba si los dos elementos 
+  ya habían sido previamente enlazados, mientras que en la nueva versión sí se corrige.
+  
+* También se han añadido dos nuevos atributos en la clase NodeGUI (width, height) para armonizar todos los valores de 
+  tamaño de los iconos. Además, se han comenzado a añadir propiedades propias de Mininet en dicha clase, como puede ser 
+  la dirección IP.
+  
+* Antes de que el usuario pueda darle una dirección IP específica al nuevo elemento, el programa le asigna una IP 
+  predeterminada. Además, la IP queda siempre reflejada en la escena al unirse al elemento como etiqueta.
 #### Versión 00.00.02
 En esta versión se han realizado los siguientes cambios:
 * Se ha añadido un botón para eliminar elementos y hacer más accesible esta funcionalidad para el usuario.

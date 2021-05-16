@@ -24,31 +24,30 @@ import json
 
 class NodeGUI(QGraphicsPixmapItem):
     """"Class for main elements"""
-    def __init__(self, x, y, tool):
+    def __init__(self, x, y, tool, name=None, ip=None):
         super(NodeGUI, self).__init__()
 
         # Initial attributes
         self.tool = tool
-        self.name = ""
+        self.name = name
+        self.width = 64
+        self.height = 64
         self.icon = None
         self.image = None
         self.links = []
+        self.properties = {}
 
         # Setting up initial attributes
-        self.setNodeAttributes(x, y)
+        self.setNodeAttributes(x, y, ip)
 
-    def setNodeAttributes(self, x, y):
+    def setNodeAttributes(self, x, y, ip=None):
         images = imagesMiniGUI()
 
         # Setting up icon and image of the node
         self.icon = images[self.tool]
-        self.image = QPixmap(self.icon).scaled(50, 50, Qt.KeepAspectRatio)
+        self.image = QPixmap(self.icon).scaled(self.width, self.height, Qt.KeepAspectRatio)
 
         self.setPixmap(self.image)
-
-        # Definition of offset to center image where user clicked
-        offset = self.boundingRect().topLeft() - self.boundingRect().center()
-        self.setOffset(offset.x(), offset.y())
 
         # Setting of flag and internal attributes of the element
         self.setShapeMode(QGraphicsPixmapItem.BoundingRectShape)
@@ -61,6 +60,9 @@ class NodeGUI(QGraphicsPixmapItem):
         # Positioning of element on the scene
         self.setPos(x, y)
         self.setZValue(100)
+        # Moving element in order to center it where user has clicked
+        offset = self.boundingRect().topLeft() - self.boundingRect().center()
+        self.moveBy(offset.x(), offset.y())
 
     # Auxiliary functions
 
@@ -70,7 +72,6 @@ class NodeGUI(QGraphicsPixmapItem):
         painter = QPainter(self.image)
         painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
         painter.setBrush(Qt.blue)
-        painter.setOpacity(0.8)
         painter.drawRect(self.image.rect())
         painter.end()
         # Setting new image as the icon within scene
@@ -78,7 +79,7 @@ class NodeGUI(QGraphicsPixmapItem):
 
     def returnOriginalPixmap(self):
         # Retrieving original icon
-        self.image = QPixmap(self.icon).scaled(50, 50, Qt.KeepAspectRatio)
+        self.image = QPixmap(self.icon).scaled(self.width, self.height, Qt.KeepAspectRatio)
         self.setPixmap(self.image)
 
     # Attribute access functions
@@ -89,11 +90,8 @@ class NodeGUI(QGraphicsPixmapItem):
     def updateIcon(self):
         images = imagesMiniGUI()
         self.icon = images[self.tool]
-        self.image = QPixmap(self.icon).scaled(50, 50, Qt.KeepAspectRatio)
+        self.image = QPixmap(self.icon).scaled(self.width, self.height, Qt.KeepAspectRatio)
         self.setPixmap(self.image)
-
-    def updateName(self, name):
-        self.name = name
 
     # Event handlers
 
@@ -218,38 +216,57 @@ class CanvasGUI(QGraphicsScene):
 
         # Event handling initialization
         self.new_link = None
-        self.link_item = None
+        self.link_orig_item = None
+
+        # IP address variables
+        self.default_ip_num = 1
+        self.default_ip_base = "10.0.0."
+        self.default_ip = self.default_ip_base + str(self.default_ip_num)
 
     # Scene functions
 
-    def addSceneElement(self, x, y, tool, name=None):
-        """Function to add a main element to the scene"""
-        node = NodeGUI(x, y, tool)
+    @staticmethod
+    def addSceneNodeTags(node, name, ip):
+        """This function creates tags for item and links them to it"""
+        name_tag = QGraphicsTextItem(name, node)
+        ip_tag = QGraphicsTextItem(ip, node)
 
+        name_tag.setPos((node.boundingRect().width() - name_tag.boundingRect().width()) / 2,
+                        node.boundingRect().bottomLeft().y())
+        ip_tag.setPos((node.boundingRect().width() - ip_tag.boundingRect().width()) / 2,
+                      node.boundingRect().bottomLeft().y() + name_tag.boundingRect().bottomLeft().y() / 2)
+
+    def addSceneNode(self, x, y, tool, name=None, ip=None):
+        """Function to add a main element to the scene"""
         # Name checking (used in case of loading from a previous project)
         if name is not None:
-            new_name = name
+            node_name = name
         else:
-            new_name = self.item_letter[tool] + str(self.item_count[tool])
+            node_name = self.item_letter[tool] + str(self.item_count[tool])
+        # IP address checking (used in case of loading from a previous project)
+        if ip is not None:
+            node_ip = ip
+        else:
+            node_ip = self.default_ip
 
-        self.item_count[tool] = self.item_count[tool] + 1
-        node.updateName(new_name)
-
-        # Creation of an appendix text to name the main element
-        text = QGraphicsTextItem(new_name, node)
-        text.setPos(- text.boundingRect().width() / 2, node.boundingRect().bottomLeft().y() * 3 / 4)
+        node = NodeGUI(x, y, tool, node_name, node_ip)
 
         # Addition of node to scene, gaining focus and modifying the scene
+        self.addSceneNodeTags(node, node_name, node_ip)
         self.addItem(node)
         node.setFocus()
+
         self.modified = True
+        self.item_count[tool] = self.item_count[tool] + 1
+        self.default_ip_num = self.default_ip_num + 1
+        self.default_ip = self.default_ip_base + str(self.default_ip_num)
 
     def addSceneLink(self, x, y):
         """Function to inicializate a new link on the scene"""
         self.new_link = LinkGUI(x, y, x, y)
         self.addItem(self.new_link)
 
-    def removeSceneElement(self, item):
+    def removeSceneItem(self, item):
         """Deletes an element/link from the scene and all elements related to it"""
         # Initial variable in order to remove links later
         links_to_remove = []
@@ -294,7 +311,12 @@ class CanvasGUI(QGraphicsScene):
                     for scene_item in self.items():
                         if isinstance(scene_item, NodeGUI) and link_item_name == scene_item.name:
                             scene_item_pos = scene_item.scenePos()
-                            link.setLine(item_pos.x(), item_pos.y(), scene_item_pos.x(), scene_item_pos.y())
+                            offset_item = item.boundingRect().center()
+                            offset_scene_item = scene_item.boundingRect().center()
+                            link.setLine(item_pos.x() + offset_item.x(),
+                                         item_pos.y() + offset_item.y(),
+                                         scene_item_pos.x() + offset_scene_item.x(),
+                                         scene_item_pos.y() + offset_scene_item.y())
 
         self.modified = True
 
@@ -316,26 +338,37 @@ class CanvasGUI(QGraphicsScene):
 
         # Resetting temporary variables to initial state
         self.new_link = None
-        self.link_item = None
+        self.link_orig_item = None
         self.modified = True
 
     def loadScene(self, data):
         """Function called when loading a scene from an external file"""
-        if "houses" in data:
-            houses_list = data["houses"]
-            for house in houses_list:
-                house_name = house["name"]
-                house_x_pos = house["x_pos"]
-                house_y_pos = house["y_pos"]
-                self.addSceneElement(house_x_pos, house_y_pos, "House", house_name)
+        if "hosts" in data:
+            hosts_list = data["hosts"]
+            for host in hosts_list:
+                host_name = host["name"]
+                host_x_pos = host["x_pos"]
+                host_y_pos = host["y_pos"]
+                host_ip = host["ip"]
+                self.addSceneNode(host_x_pos, host_y_pos, "Host", host_name, host_ip)
 
-        if "cars" in data:
-            cars_list = data["cars"]
-            for car in cars_list:
-                car_name = car["name"]
-                car_x_pos = car["x_pos"]
-                car_y_pos = car["y_pos"]
-                self.addSceneElement(car_x_pos, car_y_pos, "Car", car_name)
+        if "switches" in data:
+            switches_list = data["switches"]
+            for switch in switches_list:
+                switch_name = switch["name"]
+                switch_x_pos = switch["x_pos"]
+                switch_y_pos = switch["y_pos"]
+                switch_ip = switch["ip"]
+                self.addSceneNode(switch_x_pos, switch_y_pos, "Switch", switch_name, switch_ip)
+
+        if "routers" in data:
+            routers_list = data["routers"]
+            for router in routers_list:
+                router_name = router["name"]
+                router_x_pos = router["x_pos"]
+                router_y_pos = router["y_pos"]
+                router_ip = router["ip"]
+                self.addSceneNode(router_x_pos, router_y_pos, "Router", router_name, router_ip)
 
         if "links" in data:
             links_list = data["links"]
@@ -347,20 +380,20 @@ class CanvasGUI(QGraphicsScene):
                         if isinstance(scene_item, NodeGUI) and item_name == scene_item.name:
                             scene_element.append(scene_item)
 
-                orig_coor = scene_element[0].scenePos()
-                dest_coor = scene_element[1].scenePos()
+                orig_coor = scene_element[0].scenePos() + scene_element[0].boundingRect().center()
+                dest_coor = scene_element[1].scenePos() + scene_element[1].boundingRect().center()
                 self.addSceneLink(orig_coor.x(), orig_coor.y())
                 self.new_link.updateEndPoint(dest_coor.x(), dest_coor.y())
                 self.finishSceneLink()
 
-        # Al cargar la escena, no hace falta marcar la escena como modificada
         self.modified = False
 
     def saveScene(self):
         """Function called to save the state of the current project"""
         file_dictionary = {}
-        house_saved = []
-        car_saved = []
+        hosts_saved = []
+        switches_saved = []
+        routers_saved = []
         link_saved = []
 
         for item in self.items():
@@ -368,12 +401,15 @@ class CanvasGUI(QGraphicsScene):
                 node = {
                     "name": item.name,
                     "x_pos": item.scenePos().x(),
-                    "y_pos": item.scenePos().y()
+                    "y_pos": item.scenePos().y(),
+                    "ip": item.properties["IP"]
                 }
-                if item.tool == "House":
-                    house_saved.append(node)
-                elif item.tool == "Car":
-                    car_saved.append(node)
+                if item.tool == "Host":
+                    hosts_saved.append(node)
+                elif item.tool == "Switch":
+                    switches_saved.append(node)
+                elif item.tool == "Router":
+                    routers_saved.append(node)
 
             elif isinstance(item, LinkGUI):
                 node = {
@@ -381,8 +417,9 @@ class CanvasGUI(QGraphicsScene):
                 }
                 link_saved.append(node)
 
-        file_dictionary["houses"] = house_saved
-        file_dictionary["cars"] = car_saved
+        file_dictionary["hosts"] = hosts_saved
+        file_dictionary["switches"] = switches_saved
+        file_dictionary["routers"] = routers_saved
         file_dictionary["links"] = link_saved
 
         self.modified = False
@@ -391,8 +428,25 @@ class CanvasGUI(QGraphicsScene):
 
     # Auxiliary functions
 
+    def checkFeasibleLink(self, last_item):
+        if last_item == self.link_orig_item or last_item == self.new_link:
+            return False
+
+        if isinstance(self.link_orig_item, NodeGUI) and isinstance(last_item, NodeGUI):
+            if self.link_orig_item.tool == "Host" and last_item.tool == "Host":
+                return False
+
+        orig_item_links = self.link_orig_item.links
+        dest_item_links = last_item.links
+        for orig_link in orig_item_links:
+            for dest_link in dest_item_links:
+                if dest_link == orig_link:
+                    return False
+
+        return True
+
     # WIP
-    def selectSceneElement(self, item):
+    def selectSceneItem(self, item):
         # 1st version: ItemIsSelectable
         if not isinstance(item, NodeGUI) and not isinstance(item, LinkGUI):
             return
@@ -426,29 +480,33 @@ class CanvasGUI(QGraphicsScene):
         if event.key() == Qt.Key_Delete or event.key() == Qt.Key_Backspace:
             item = self.focusItem()
             if item is not None:
-                self.removeSceneElement(item)
+                self.removeSceneItem(item)
 
     def mousePressEvent(self, event):
         """Handler for mouse press events: depending on the selected tool, different actions are taken"""
+        if event.button() != Qt.LeftButton:
+            return
+
         if self.current_tool == "Select":
             super().mousePressEvent(event)
             item = self.itemAt(event.scenePos(), QTransform())
             if item is not None:
-                self.selectSceneElement(item)
+                self.selectSceneItem(item)
             else:
                 self.clearSelection()
         elif self.current_tool == "Link":
             item = self.itemAt(event.scenePos(), QTransform())
             if item is not None and isinstance(item, NodeGUI):
-                self.link_item = item
-                self.addSceneLink(item.scenePos().x(), item.scenePos().y())
+                self.link_orig_item = item
+                offset = item.boundingRect().center()
+                self.addSceneLink(item.scenePos().x() + offset.x(), item.scenePos().y() + offset.y())
         elif self.current_tool == "Delete":
             item = self.itemAt(event.scenePos(), QTransform())
             if item is not None and not isinstance(item, QGraphicsTextItem):
-                self.removeSceneElement(item)
+                self.removeSceneItem(item)
         else:
-            self.addSceneElement(event.scenePos().x(), event.scenePos().y(), self.current_tool)
-            self.selectSceneElement(self.focusItem())
+            self.addSceneNode(event.scenePos().x(), event.scenePos().y(), self.current_tool)
+            self.selectSceneItem(self.focusItem())
 
     def mouseMoveEvent(self, event):
         """Handler for mouse move events. Now only used when link tool is selected to move link along with mouse"""
@@ -461,12 +519,13 @@ class CanvasGUI(QGraphicsScene):
         super().mouseReleaseEvent(event)
         if self.current_tool == "Link" and self.new_link is not None:
             item = self.itemAt(event.scenePos(), QTransform())
-            if item == self.link_item or item == self.new_link or not isinstance(item, NodeGUI):
-                self.removeItem(self.new_link)
-            else:
-                self.new_link.updateEndPoint(item.scenePos().x(), item.scenePos().y())
-                self.new_link.setFocus()
+            if isinstance(item, NodeGUI) and self.checkFeasibleLink(item):
+                offset = item.boundingRect().center()
+                self.new_link.updateEndPoint(item.scenePos().x() + offset.x(), item.scenePos().y() + offset.y())
+                self.selectSceneItem(self.new_link)
                 self.finishSceneLink()
+            else:
+                self.removeItem(self.new_link)
 
 
 # Main class: main window of application
@@ -500,6 +559,7 @@ class MiniGUI(QMainWindow):
 
     # Application initialization functions
 
+    # WIP
     def setSettings(self):
         self.settings = QSettings('MiniGUI', 'settings')
         global app_theme
@@ -599,7 +659,7 @@ class MiniGUI(QMainWindow):
         # Setting up tools
         images = imagesMiniGUI()
         for button in images:
-            # Litter spacer for aesthetic reason
+            # Little spacer for aesthetic reason
             if button == "Select":
                 little_spacer = QWidget()
                 little_spacer.setFixedWidth(20)
@@ -659,6 +719,7 @@ class MiniGUI(QMainWindow):
         self.setWindowTitle("MiniGUI")
         self.scene.clear()
         self.scene.modified = False
+        self.scene.default_ip_last = 1
         for tool in self.scene.item_count:
             self.scene.item_count[tool] = 0
 
@@ -670,10 +731,6 @@ class MiniGUI(QMainWindow):
                 self.saveProject()
             elif result == QMessageBox.Cancel:
                 return
-            elif result == QMessageBox.Discard:
-                pass
-            else:
-                pass
 
         self.clearProject()
 
@@ -685,10 +742,6 @@ class MiniGUI(QMainWindow):
                 self.saveProject()
             elif result == QMessageBox.Cancel:
                 return
-            elif result == QMessageBox.Discard:
-                pass
-            else:
-                pass
 
         dialogfilename = QFileDialog.getOpenFileName(self, "Open file", os.path.expanduser("~"),
                                                      "Mininet topology (*.mn);;All files (*)", "")
@@ -776,10 +829,6 @@ class MiniGUI(QMainWindow):
                 self.saveProject()
             elif result == QMessageBox.Cancel:
                 event.ignore()
-            elif result == QMessageBox.Discard:
-                pass
-            else:
-                pass
 
     def showEvent(self, event):
         self.canvas.setSceneRect(QRectF(self.canvas.viewport().rect()))
@@ -821,7 +870,7 @@ class MiniGUI(QMainWindow):
         else:
             about_icon = QPixmap("logo-urjc_blanco.png")
 
-        about_icon_resize = about_icon.scaled(100, 100, Qt.KeepAspectRatio)
+        about_icon_resize = about_icon.scaled(128, 128, Qt.KeepAspectRatio)
 
         label1 = QLabel(about)
         label1.setPixmap(about_icon_resize)
@@ -829,14 +878,7 @@ class MiniGUI(QMainWindow):
         label2 = QLabel(about)
         label2.setText("MiniGUI: network graphical editor, made specifically for you\n\n"
                        "Author: Daniel Polo Álvarez (d.poloa@alumnos.urjc.es)\n\n"
-                       "Universidad Rey Juan Carlos (URJC)\n\n"
-                       "Prueba\n"
-                       "Prueba\n"
-                       "Prueba\n"
-                       "Prueba\n"
-                       "Prueba\n"
-                       "Prueba\n"
-                       "Prueba\n")
+                       "Universidad Rey Juan Carlos (URJC)")
 
         button = QDialogButtonBox(QDialogButtonBox.Ok)
         button.accepted.connect(about.accept)
