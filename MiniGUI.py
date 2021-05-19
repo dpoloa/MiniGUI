@@ -24,11 +24,11 @@ import json
 
 class NodeGUI(QGraphicsPixmapItem):
     """"Class for main elements"""
-    def __init__(self, x, y, tool, name=None, ip=None):
+    def __init__(self, x, y, node_type, name=None, ip=None, new_node=False):
         super(NodeGUI, self).__init__()
 
         # Initial attributes
-        self.tool = tool
+        self.node_type = node_type
         self.name = name
         self.width = 64
         self.height = 64
@@ -38,13 +38,13 @@ class NodeGUI(QGraphicsPixmapItem):
         self.properties = {}
 
         # Setting up initial attributes
-        self.setNodeAttributes(x, y, ip)
+        self.setNodeAttributes(x, y, ip, new_node)
 
-    def setNodeAttributes(self, x, y, ip=None):
+    def setNodeAttributes(self, x, y, ip=None, new_node=False):
         images = imagesMiniGUI()
 
         # Setting up icon and image of the node
-        self.icon = images[self.tool]
+        self.icon = images[self.node_type]
         self.image = QPixmap(self.icon).scaled(self.width, self.height, Qt.KeepAspectRatio)
 
         self.setPixmap(self.image)
@@ -60,9 +60,13 @@ class NodeGUI(QGraphicsPixmapItem):
         # Positioning of element on the scene
         self.setPos(x, y)
         self.setZValue(100)
-        # Moving element in order to center it where user has clicked
-        offset = self.boundingRect().topLeft() - self.boundingRect().center()
-        self.moveBy(offset.x(), offset.y())
+        # Moving element in order to center it where user has clicked (only for new elements)
+        if new_node:
+            offset = self.boundingRect().topLeft() - self.boundingRect().center()
+            self.moveBy(offset.x(), offset.y())
+
+        # Properties assignment
+        self.properties['IP'] = ip
 
     # Auxiliary functions
 
@@ -89,7 +93,7 @@ class NodeGUI(QGraphicsPixmapItem):
 
     def updateIcon(self):
         images = imagesMiniGUI()
-        self.icon = images[self.tool]
+        self.icon = images[self.node_type]
         self.image = QPixmap(self.icon).scaled(self.width, self.height, Qt.KeepAspectRatio)
         self.setPixmap(self.image)
 
@@ -106,7 +110,7 @@ class NodeGUI(QGraphicsPixmapItem):
 
     def contextMenuEvent(self, event):
         context_menu = QMenu()
-        properties_act = context_menu.addAction(self.tool + " properties")
+        properties_act = context_menu.addAction(self.node_type + " properties")
         action = context_menu.exec_(event.screenPos())
 
     def focusInEvent(self, event):
@@ -236,20 +240,23 @@ class CanvasGUI(QGraphicsScene):
         ip_tag.setPos((node.boundingRect().width() - ip_tag.boundingRect().width()) / 2,
                       node.boundingRect().bottomLeft().y() + name_tag.boundingRect().bottomLeft().y() / 2)
 
-    def addSceneNode(self, x, y, tool, name=None, ip=None):
+    def addSceneNode(self, x, y, node_type, name=None, ip=None):
         """Function to add a main element to the scene"""
-        # Name checking (used in case of loading from a previous project)
-        if name is not None:
-            node_name = name
-        else:
-            node_name = self.item_letter[tool] + str(self.item_count[tool])
         # IP address checking (used in case of loading from a previous project)
         if ip is not None:
             node_ip = ip
         else:
             node_ip = self.default_ip
 
-        node = NodeGUI(x, y, tool, node_name, node_ip)
+        # Name checking (used in case of loading from a previous project)
+        if name is not None:
+            node_name = name
+            node_new = False
+        else:
+            node_name = self.item_letter[node_type] + str(self.item_count[node_type])
+            node_new = True
+
+        node = NodeGUI(x, y, node_type, node_name, node_ip, node_new)
 
         # Addition of node to scene, gaining focus and modifying the scene
         self.addSceneNodeTags(node, node_name, node_ip)
@@ -257,7 +264,7 @@ class CanvasGUI(QGraphicsScene):
         node.setFocus()
 
         self.modified = True
-        self.item_count[tool] = self.item_count[tool] + 1
+        self.item_count[node_type] = self.item_count[node_type] + 1
         self.default_ip_num = self.default_ip_num + 1
         self.default_ip = self.default_ip_base + str(self.default_ip_num)
 
@@ -404,11 +411,11 @@ class CanvasGUI(QGraphicsScene):
                     "y_pos": item.scenePos().y(),
                     "ip": item.properties["IP"]
                 }
-                if item.tool == "Host":
+                if item.node_type == "Host":
                     hosts_saved.append(node)
-                elif item.tool == "Switch":
+                elif item.node_type == "Switch":
                     switches_saved.append(node)
-                elif item.tool == "Router":
+                elif item.node_type == "Router":
                     routers_saved.append(node)
 
             elif isinstance(item, LinkGUI):
@@ -433,7 +440,7 @@ class CanvasGUI(QGraphicsScene):
             return False
 
         if isinstance(self.link_orig_item, NodeGUI) and isinstance(last_item, NodeGUI):
-            if self.link_orig_item.tool == "Host" and last_item.tool == "Host":
+            if self.link_orig_item.node_type == "Host" and last_item.node_type == "Host":
                 return False
 
         orig_item_links = self.link_orig_item.links
