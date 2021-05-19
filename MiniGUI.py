@@ -100,7 +100,7 @@ class NodeGUI(QGraphicsPixmapItem):
         if change == QGraphicsItem.ItemScenePositionHasChanged:
             scene = self.scene()
             if scene is not None and isinstance(scene, CanvasGUI):
-                scene.updateLinks(self)
+                scene.updateSceneLinks(self)
 
         return QGraphicsItem.itemChange(self, change, value)
 
