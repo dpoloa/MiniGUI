@@ -211,8 +211,8 @@ class CanvasGUI(QGraphicsScene):
         self.modified = False
 
         # Model initialization
-        self.item_letter = {"House": "h", "Car": "c", "Link": "l"}
-        self.item_count = {"House": 0, "Car": 0, "Link": 0}
+        self.item_letter = {"Host": "h", "Switch": "s", "Router": "r", "Link": "l"}
+        self.item_count = {"Host": 0, "Switch": 0, "Router": 0, "Link": 0}
 
         # Event handling initialization
         self.new_link = None
