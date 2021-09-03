@@ -8,10 +8,35 @@ los elementos básicos: hubs, switches, routers y ordenadores/hosts (por ahora, 
 el futuro). Este programa está escrito en Python, y usa como paquete gráfico Qt, con su adaptación al lenguaje usado 
 como PyQt5.
 ## Historial de versiones
+#### Versión 00.01.01
+En esta versión se han introducido las siguientes mejoras y cambios:
+
+* Se ha añadido un indicador en la barra inferior de información para conocer el estado de la red simulada en cualquier 
+  momento: rojo cuando la red no está activa y verde cuando sí lo está.
+  
+* Se ha mejorado y modificado la ventana de diálogo de los elementos host y router. 
+
+* Cuando se cree el enlace entre dos elementos, dos nuevas etiquetas aparecen encima del enlace:
+  * La primera refleja el nombre de la interfaz a la que está conectada dicho enlace en cada elemento/nodo, lo cual 
+    ayudará al usuario a distinguir cuál es la interfaz que debe modificar para que funcione todo el sistema. 
+  * Debajo de dicha etiqueta aparecerá la dirección IP asociada a dicha interfaz si está definida.
+
+* Se han creado nuevas clases para una mayor especialización de las etiquetas: TagGUI (clase base), EthTagGUI e 
+  IpTagGUI (clases extendidas de la clase base).
+
+* Se ha añadido el CLI, el cual se ejecuta en el mismo terminal donde se llamó por primera vez al simulador. Tiene todas
+  las funcionalidades implementadas por el propio Mininet, aunque algunas funcionalidades como salidas no controladas o 
+  forzosas con Ctrl+D o Ctrl+C todavía no están disponibles. 
+
+* Ahora puedes modificar ciertas características de tu simulación en directo desde la ventana de propiedades del nodo, 
+  además de poder actualizar en directo cualquier cambio que se haya hecho desde Mininet en la escena.
+
+* Se ha redefinido parte del código para una mayor escalabilidad y sencillez.
+
 #### Versión 00.01.00
-¡Aquí está la primera versión funcional de MiniGUI! Ya es posible crear tu propia red y guardar ciertos campos básicos 
-gracias a Mininet, código de libre acceso que permite crear redes de ordenadores a través de hosts y switches haciendo 
-uso de las tecnologías OpenFlow y OpenVSwitch (ver http://mininet.org/ para más información, 
+**¡Aquí está la primera versión funcional de MiniGUI!** Ya es posible crear tu propia red y guardar ciertos campos 
+básicos gracias a Mininet, código de libre acceso que permite crear redes de ordenadores a través de hosts y switches 
+haciendo uso de las tecnologías OpenFlow y OpenVSwitch (ver http://mininet.org/ para más información, 
 https://github.com/mininet/mininet para ver el código base, actualizado cada poco tiempo).
 
 Esta primera versión ofrece al usuario la capacidad de crear sus propios hosts, switches y routers (siendo estos últimos
