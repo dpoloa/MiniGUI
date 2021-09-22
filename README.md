@@ -8,6 +8,17 @@ los elementos básicos: hubs, switches, routers y ordenadores/hosts (por ahora, 
 el futuro). Este programa está escrito en Python, y usa como paquete gráfico Qt, con su adaptación al lenguaje usado 
 como PyQt5.
 ## Historial de versiones
+#### Versión 00.01.02
+Esta actualización trae consigo las siguientes mejoras y cambios:
+* Ahora el programa es capaz de recordar algunas de tus preferencias como el directorio donde has guardado tu último 
+proyecto (a través del cuadro de diálogo de "Abrir proyecto") y el modo de la aplicación (claro u oscuro).
+* Se ha solucionado un pequeño error que salía en el terminal donde se ejecutaba MiniGUI al arrancarlo (QStandardPaths).
+* Se ha añadido una nueva clase para las etiquetas del nombre de los nodos (NameTagGUI), que extiende la clase base
+TagGUI.
+* Se ha solucionado un error que impedía que los iconos de herramientas no cambiasen de color cuando el tema de la 
+aplicación cambiaba de claro a oscuro.
+* Se ha añadido una comprobación para saber si el programa está siendo ejecutado como superusuario (necesario para 
+poder ejecutar Mininet).
 #### Versión 00.01.01
 En esta versión se han introducido las siguientes mejoras y cambios:
 
