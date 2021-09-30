@@ -8,6 +8,28 @@ los elementos básicos: hubs, switches, routers y ordenadores/hosts (por ahora, 
 el futuro). Este programa está escrito en Python, y usa como paquete gráfico Qt, con su adaptación al lenguaje usado 
 como PyQt5.
 ## Historial de versiones
+#### Versión 00.01.03
+Esta nueva versión añade nuevas opciones de personalización y mejoras que ayudarán al usuario a disfrutar de una mejor
+experiencia:
+* Se han añadido dos opciones más junto con la elección de tema claro/oscuro: uso de controladores (versión básica o 
+avanzada) y acceso al CLI. El uso de controladores implica un mayor conocimiento de las redes de comunicaciones y de
+los protocolos OpenFlow y OpenVSwitch, mientras el usar el CLI permite tener un mayor control sobre la simulación.
+* Se ha remodelado completamente el cuadro de diálogo de propiedades del router, modificando el nombre de las pestañas y 
+su contenido. Ahora, la nueva pestaña "Interfaces" guarda toda la información propias de las interfaces del router, 
+mientras que la pestaña "Routing" muestra todas las rutas almacenadas en la tabla del router con la posibilidad de 
+eliminarlas o añadir algunas nuevas (incluyendo la ruta por defecto) haciendo uso de su propia sintaxis.
+* El cuadro de diálogo del host también ha sufrido un lavado de cara, modificando nombres y diseños de algunas pestañas,
+además de mostrar la tabla de routing en la pestaña correspondiente cuando Mininet está activo.
+* Se ha modificado el color de las etiquetas de nombres de interfaz para una mayor diferenciación respecto a otras 
+etiquetas, además de arreglar un pequeño fallo que impedía darles a dichas etiquetas el color deseado cuando se iniciaba
+la aplicación.
+* El indicador de estado del simulador (red activa o no) se ha modificado y traducido al inglés para estar en 
+consonancia con el resto de la aplicación.
+* Las etiquetas de nombres de interfaz, cuando estaban solas (sin ser acompañadas por la etiqueta de dirección IP
+correspondiente), no eran muy visibles cuando la línea estaba completamente horizontal, al atravesar longitudinalmente 
+el texto de la etiqueta. Este error se ha corregido en esta versión.
+* A partir de esta versión, además de la actualización manual de la escena, el propio simulador actualizará la escena
+de forma completamente automática cada cierto intervalo de tiempo. 
 #### Versión 00.01.02
 Esta actualización trae consigo las siguientes mejoras y cambios:
 * Ahora el programa es capaz de recordar algunas de tus preferencias como el directorio donde has guardado tu último 
