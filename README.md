@@ -8,6 +8,28 @@ los elementos básicos: hubs, switches, routers y ordenadores/hosts (por ahora, 
 el futuro). Este programa está escrito en Python, y usa como paquete gráfico Qt, con su adaptación al lenguaje usado 
 como PyQt5.
 ## Historial de versiones
+#### Versión 00.01.04
+En esta nueva versión se han realizado cambios en algunas funcionalidades:
+* Se han eliminado los botones para arrancar, parar y actualizar la escena. Ahora solo hay un único botón que cambia en 
+función del estado de Mininet ("Start" cuando Mininet no está activo y "Stop" cuando sí lo está). De esta forma, la 
+actualización se realizará de forma automática (ahora mismo cada 5 segundos).
+* Se han modificado algunos mensajes que aparecían en las ventanas de diálogo en ciertas ocasiones para una mayor 
+comprensión por parte del usuario.
+* Se ha modificado la pestaña "Interfaces" del host para que tenga la misma apariencia que la del router.
+* Se han modificado las siguientes características de la pestaña "Routing" tanto en el host como en el router:
+  * Se ha cambiado el mensaje que aparecía encima del recuadro para escribir el comando.
+  * Se ha añadido una funcionalidad de control de entrada para comprobar que el comando forma parte de la familia de
+  comandos "route" o "ip route".
+  * Se ha cambiado el mensaje del botón "Send" por "Apply". Además, cuando se envía el comando se limpia el formulario 
+  para escribir el comando.
+  * Se ha arreglado el fallo que no permitía eliminar la ruta elegida. 
+* Ahora las ventanas de propiedades pueden moverse independientemente de la ventana principal.
+* Se han modificado los iconos de "switch", "router" y "delete" de la aplicación, tomando un tono más grisáceo (y donde
+el último ha cambiado de ser una papelera a unas tijeras).
+* Se ha modificado el color de las enlaces para una mejor visualización en el modo oscuro.
+* Se ha arreglado un fallo que no permitía guardar correctamente el proyecto al cargar el proyecto tras haber salido 
+previamente de la aplicación.
+* Se ha realizado una nueva limpieza del código, eliminando funciones de funcionalidades no continuadas.
 #### Versión 00.01.03
 Esta nueva versión añade nuevas opciones de personalización y mejoras que ayudarán al usuario a disfrutar de una mejor
 experiencia:
