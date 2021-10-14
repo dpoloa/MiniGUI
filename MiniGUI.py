@@ -822,17 +822,14 @@ class NodeGUI(QGraphicsPixmapItem):
         if not self.properties["eth_intfs"]:
             return self.node_name + "-eth0"
 
-        intf_name = ""
-        intf_base = self.node_name + "-eth"
         intf_count = 0
+        intf_base = self.node_name + "-eth"
+        intf_name = intf_base + str(intf_count)
         for index in range(len(self.properties["eth_intfs"])):
-            coincidence = False
-            intf_name = intf_base + str(intf_count)
             if str(intf_name) in self.properties["eth_intfs"]:
                 intf_count = intf_count + 1
-                coincidence = True
-
-            if not coincidence:
+                intf_name = intf_base + str(intf_count)
+            else:
                 break
 
         return intf_name
