@@ -8,6 +8,12 @@ los elementos básicos: hubs, switches, routers y ordenadores/hosts (por ahora, 
 el futuro). Este programa está escrito en Python, y usa como paquete gráfico Qt, con su adaptación al lenguaje usado 
 como PyQt5.
 ## Historial de versiones
+#### Versión 00.01.05
+Esta nueva versión trae las siguientes novedades/correcciones:
+* Corrige un error que impedía que Mininet pudiera arrancarse.
+* Corrige un error que, al salir de la aplicación a través de la opción "Quit" del menú "File" o al usar el comando 
+"Ctrl + Q" sin haber guardado previamente el progreso, no salía la ventana de diálogo de guardado del archivo. 
+* Se han eliminado partes del código pertenecientes a funcionalidades no disponibles en la versión 01.00.00.
 #### Versión 00.01.04
 En esta nueva versión se han realizado cambios en algunas funcionalidades:
 * Se han eliminado los botones para arrancar, parar y actualizar la escena. Ahora solo hay un único botón que cambia en 
