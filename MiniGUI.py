@@ -819,7 +819,7 @@ class NodeGUI(QGraphicsPixmapItem):
 
     def assignIntfName(self):
         """This function checks all interfaces and creates a new name for the last interface"""
-        if "eth_intfs" not in self.properties:
+        if not self.properties["eth_intfs"]:
             return self.node_name + "-eth0"
 
         intf_name = ""
