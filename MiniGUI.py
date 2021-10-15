@@ -2229,7 +2229,7 @@ class MiniGUI(QMainWindow):
 
         return output
 
-    def geSwitchStoredRoutes(self, node=None):
+    def getSwitchStoredRoutes(self, node=None):
         """This function returns the routing table of hosts and switch"""
         if self.net is None or not isinstance(node, NodeGUI) or node.node_type != "Switch":
             return
