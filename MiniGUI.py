@@ -412,7 +412,7 @@ class RouterDialog(BaseDialog):
     def __init__(self, router, parent=None):
         super(RouterDialog, self).__init__(parent=parent)
 
-        # Class attributtes
+        # Class attributes
         self.results = {}
         self.router = router
 
@@ -1151,6 +1151,7 @@ class CanvasGUI(QGraphicsScene):
         else:
             node_properties = properties
 
+        # Name checking
         if name is not None:
             node_new = False
             node_name = name
@@ -1186,11 +1187,7 @@ class CanvasGUI(QGraphicsScene):
     @staticmethod
     def checkNodeIpTag(node, eth):
         """Returns boolean depending on if IP tag must be created or not"""
-        if node.node_type == "Host":
-            return True
-        elif node.node_type == "Switch":
-            return False
-        else:
+        if node.node_type != "Switch":
             node_eths = node.properties["eth_intfs"]
             if eth in node_eths and node_eths[eth] != "":
                 return True
@@ -1215,9 +1212,11 @@ class CanvasGUI(QGraphicsScene):
 
     def addSceneLinkEthTags(self, orig_node, orig_eth, dest_node, dest_eth):
         """This function creates and adds the Ethernet interface tags to scene"""
+        # Creating the interface tags
         orig_tag = EthTagGUI(orig_eth, None)
         dest_tag = EthTagGUI(dest_eth, None)
 
+        # Storing pointer in link and scene
         self.new_link.scene_tags[orig_node.node_name] = orig_tag
         self.new_link.scene_tags[dest_node.node_name] = dest_tag
         orig_node.scene_tags["eth"][orig_eth] = orig_tag
@@ -1225,6 +1224,7 @@ class CanvasGUI(QGraphicsScene):
         self.addItem(orig_tag)
         self.addItem(dest_tag)
 
+        # Checking if ip tag must be crated along
         if self.checkNodeIpTag(orig_node, orig_eth):
             self.addSceneLinkIpTags(orig_node, orig_eth, orig_tag)
 
@@ -1257,6 +1257,7 @@ class CanvasGUI(QGraphicsScene):
         self.new_link.nodes = [orig_node.node_name, dest_node.node_name]
         self.sceneLinks[new_name] = self.new_link
 
+        # Adding new link to node and new interface tags to scene
         orig_eth = orig_node.addNewLink(new_name)
         dest_eth = dest_node.addNewLink(new_name)
         self.addSceneLinkEthTags(orig_node, orig_eth, dest_node, dest_eth)
@@ -1421,6 +1422,7 @@ class CanvasGUI(QGraphicsScene):
         nodes_saved = []
         links_saved = []
 
+        # Saving nodes
         for item in self.sceneNodes:
             node = {
                 "name": self.sceneNodes[item].node_name,
@@ -1432,6 +1434,7 @@ class CanvasGUI(QGraphicsScene):
             }
             nodes_saved.append(node)
 
+        # Saving links
         for item in self.sceneLinks:
             link = {
                 "name": self.sceneLinks[item].link_name,
@@ -1504,11 +1507,6 @@ class CanvasGUI(QGraphicsScene):
                     item.updateColor()
                 elif isinstance(item, NodeGUI):
                     item.updateIcon()
-                elif isinstance(item, QGraphicsTextItem):
-                    if APP_THEME == "dark":
-                        item.setDefaultTextColor(Qt.white)
-                    else:
-                        item.setDefaultTextColor(Qt.black)
 
         return QGraphicsScene.event(self, event)
 
@@ -1540,7 +1538,7 @@ class CanvasGUI(QGraphicsScene):
                 self.addSceneLink(item.scenePos().x() + offset.x(), item.scenePos().y() + offset.y())
         elif self.current_tool == "Delete":
             item = self.itemAt(event.scenePos(), QTransform())
-            if item is not None and not isinstance(item, QGraphicsTextItem):
+            if item is not None and not isinstance(item, TagGUI):
                 self.removeSceneItem(item)
         else:
             if event.button() == Qt.LeftButton:
@@ -1582,7 +1580,7 @@ class MiniGUI(QMainWindow):
         # File attribute (used for saving process)
         self.file = None
 
-        # Preference atribute dictionary
+        # Preference attribute dictionary
         self.app_prefs = {"Mode": "basic", "CLI": True, "ProjectPath": ""}
 
         # Main window attributes settings
@@ -2148,7 +2146,7 @@ class MiniGUI(QMainWindow):
 
         for node in self.scene.sceneNodes:
             if self.scene.sceneNodes[node].node_type != "Switch":
-                # Inicialization
+                # Initialization
                 first_intf = True
                 node_intfs = self.scene.sceneNodes[node].properties["eth_intfs"]
                 net_node = self.net.nameToNode[self.scene.sceneNodes[node].node_name]
@@ -2319,7 +2317,7 @@ class MiniGUI(QMainWindow):
             self.settings.setValue("ProjectPath", str(self.app_prefs["ProjectPath"]))
 
     def changePreferences(self, preference=None):
-        """This function allows the used to change some preferences"""
+        """This function allows the user to change some preferences"""
         if preference == "theme":
             global APP_THEME
             if APP_THEME == "light":
@@ -2349,9 +2347,9 @@ class MiniGUI(QMainWindow):
         layout_h = QHBoxLayout()
 
         if APP_THEME == "light":
-            about_icon = QPixmap("./images/logo-urjc_color.png")
+            about_icon = QPixmap("./images/logo-urjc.png")
         else:
-            about_icon = QPixmap("./images/logo-urjc_blanco.png")
+            about_icon = QPixmap("./images/logo-urjc_white.png")
 
         about_icon_resize = about_icon.scaled(128, 128, Qt.KeepAspectRatio)
 
