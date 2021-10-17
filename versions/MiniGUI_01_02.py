@@ -2086,21 +2086,21 @@ def imagesMiniGUI():
     global app_theme
     if app_theme == "light":
         return {
-            "Host": "./images/laptop.png",
-            "Switch": "./images/switch.png",
-            "Router": "./images/router.png",
-            "Link": "./images/cable.png",
-            "Select": "./images/select.png",
-            "Delete": "./images/delete.png"
+            "Host": "./images_01_02/laptop.png",
+            "Switch": "./images_01_02/switch.png",
+            "Router": "./images_01_02/router.png",
+            "Link": "./images_01_02/cable.png",
+            "Select": "./images_01_02/select.png",
+            "Delete": "./images_01_02/delete.png"
         }
     else:
         return {
-            "Host": "./images/laptop.png",
-            "Switch": "./images/switch.png",
-            "Router": "./images/router.png",
-            "Link": "./images/cable_white.png",
-            "Select": "./images/select_white.png",
-            "Delete": "./images/delete_white.png"
+            "Host": "./images_01_02/laptop.png",
+            "Switch": "./images_01_02/switch.png",
+            "Router": "./images_01_02/router.png",
+            "Link": "./images_01_02/cable_white.png",
+            "Select": "./images_01_02/select_white.png",
+            "Delete": "./images_01_02/delete_white.png"
         }
 
 
