@@ -8,12 +8,23 @@ los elementos básicos: hubs, switches, routers y ordenadores/hosts (por ahora, 
 el futuro). Este programa está escrito en Python, y usa como paquete gráfico Qt, con su adaptación al lenguaje usado 
 como PyQt5.
 ## Historial de versiones
+#### Versión 00.01.06
+En esta nueva versión:
+* Se ha modificado el nombre de la clase CanvasGUI, ahora SceneGUI, para adaptarse mejor a lo que representa.
+* Se ha eliminado el atributo "settings" de la clase MiniGUI al ser redundante.
+* Se ha detectado un error que permitía crear, abrir o guardar un proyecto, modificar propiedades de la aplicación o 
+salir de ella aun cuando la simulación de Mininet seguía activada. Este error ha sido subsanado impidiendo el uso de
+la barra de menú cuando Mininet se está ejecutando.
+* Las funciones que incorporan la nueva funcionalidad descrita en el punto anterior han modificado su nombre para 
+adaptarse a su nuevo cometido.
 #### Versión 00.01.05
 Esta nueva versión trae las siguientes novedades/correcciones:
 * Corrige un error que impedía que Mininet pudiera arrancarse.
 * Corrige un error que, al salir de la aplicación a través de la opción "Quit" del menú "File" o al usar el comando 
 "Ctrl + Q" sin haber guardado previamente el progreso, no salía la ventana de diálogo de guardado del archivo. 
 * Se han eliminado partes del código pertenecientes a funcionalidades no disponibles en la versión 01.00.00.
+* Se ha modificado el nombre de la ubicación de las imágenes usadas como iconos en la aplicación.
+* Se han remodelado algunas variables globales siguiendo las normas de estilo de Python.
 #### Versión 00.01.04
 En esta nueva versión se han realizado cambios en algunas funcionalidades:
 * Se han eliminado los botones para arrancar, parar y actualizar la escena. Ahora solo hay un único botón que cambia en 

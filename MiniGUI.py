@@ -853,7 +853,7 @@ class NodeGUI(QGraphicsPixmapItem):
             elif eth not in self.scene_tags["IP"] and self.properties["eth_intfs"][eth] != "":
                 scene = self.scene()
                 eth_tag = self.scene_tags["eth"][eth]
-                if scene is not None and isinstance(scene, CanvasGUI):
+                if scene is not None and isinstance(scene, SceneGUI):
                     scene.addSceneLinkIpTags(self, eth, eth_tag)
 
     def nodePropertiesDialog(self):
@@ -873,7 +873,7 @@ class NodeGUI(QGraphicsPixmapItem):
 
             # Node name
             new_name = dialog.results["node_name"].text()
-            if isinstance(scene, CanvasGUI) and new_name != self.node_name and scene.isFeasibleName(new_name):
+            if isinstance(scene, SceneGUI) and new_name != self.node_name and scene.isFeasibleName(new_name):
                 scene.sceneNodes[new_name] = scene.sceneNodes.pop(self.node_name)
                 self.node_name = new_name
                 self.changeSceneNameTag(new_name)
@@ -942,7 +942,7 @@ class NodeGUI(QGraphicsPixmapItem):
         """This function activates when element is moved in the scene"""
         if change == QGraphicsItem.ItemScenePositionHasChanged:
             scene = self.scene()
-            if scene is not None and isinstance(scene, CanvasGUI):
+            if scene is not None and isinstance(scene, SceneGUI):
                 scene.updateSceneLinks(self)
 
         return QGraphicsItem.itemChange(self, change, value)
@@ -952,7 +952,7 @@ class NodeGUI(QGraphicsPixmapItem):
         context_menu = QMenu()
         scene = self.scene()
 
-        if scene is None or not isinstance(scene, CanvasGUI):
+        if scene is None or not isinstance(scene, SceneGUI):
             return
 
         # Contextual menu changes according to the node's type: if Switch, menu is different
@@ -992,7 +992,7 @@ class NodeGUI(QGraphicsPixmapItem):
         # Scene selected tool changes mask color
         scene_tool = None
         node_scene = self.scene()
-        if isinstance(node_scene, CanvasGUI):
+        if isinstance(node_scene, SceneGUI):
             scene_tool = node_scene.current_tool
 
         if scene_tool is not None and scene_tool == "Delete":
@@ -1007,7 +1007,7 @@ class NodeGUI(QGraphicsPixmapItem):
         # Scene selected tool changes mask color
         scene_tool = None
         node_scene = self.scene()
-        if isinstance(node_scene, CanvasGUI):
+        if isinstance(node_scene, SceneGUI):
             scene_tool = node_scene.current_tool
 
         if scene_tool is not None and scene_tool == "Delete" and self.hasFocus():
@@ -1072,7 +1072,7 @@ class LinkGUI(QGraphicsLineItem):
     def deleteSceneTags(self):
         """This function deletes all the scene tags related to this link"""
         scene = self.scene()
-        if scene is not None and isinstance(scene, CanvasGUI):
+        if scene is not None and isinstance(scene, SceneGUI):
             tags = self.scene_tags
             for tag in tags:
                 scene.removeItem(tags[tag])
@@ -1101,9 +1101,9 @@ class LinkGUI(QGraphicsLineItem):
         self.changeLineColor()
 
 
-class CanvasGUI(QGraphicsScene):
+class SceneGUI(QGraphicsScene):
     def __init__(self, net_ctrl=None):
-        super(CanvasGUI, self).__init__()
+        super(SceneGUI, self).__init__()
 
         # Pointer to main program
         self.net_controller = net_ctrl
@@ -1574,9 +1574,6 @@ class MiniGUI(QMainWindow):
     def __init__(self):
         super(QMainWindow, self).__init__()
 
-        # Program configuration setting
-        self.settings = None
-
         # File attribute (used for saving process)
         self.file = None
 
@@ -1589,16 +1586,16 @@ class MiniGUI(QMainWindow):
         self.status_bar = QStatusBar()
         self.net_button = None
         self.tool_buttons = {}
+        self.net_indicators = {}
 
         # Scene variables initialization
         self.canvas = QGraphicsView()
-        self.scene = CanvasGUI(net_ctrl=self)
+        self.scene = SceneGUI(net_ctrl=self)
 
         # Mininet variables
         self.net = None
         self.thread_cli = None
         self.thread_updater = None
-        self.net_indicators = {}
 
         # Retrieving the user preferences saved in other sessions
         self.setPreferencesGUI()
@@ -1613,32 +1610,32 @@ class MiniGUI(QMainWindow):
 
     def setPreferencesGUI(self):
         """Checking and retrieving of user preferences from previous sessions"""
-        self.settings = QSettings('MiniGUI', 'settings')
+        settings = QSettings('MiniGUI', 'settings')
 
         # Application theme
         global APP_THEME
-        APP_THEME = self.settings.value('AppTheme')
+        APP_THEME = settings.value('AppTheme')
         if APP_THEME is None:
             APP_THEME = "light"
         elif APP_THEME == "dark":
             changeAppPalette()
 
         # Application mode (basic or advanced)
-        app_mode = self.settings.value('AppMode')
+        app_mode = settings.value('AppMode')
         if app_mode != "basic" and app_mode != "advanced":
             self.app_prefs["Mode"] = "basic"
         else:
             self.app_prefs["Mode"] = app_mode
 
         # Use of CLI or not
-        app_cli = self.settings.value('AppCLI')
+        app_cli = settings.value('AppCLI')
         if app_cli == "True":
             self.app_prefs["CLI"] = True
         else:
             self.app_prefs["CLI"] = False
 
         # Directory of last opened project
-        self.app_prefs["ProjectPath"] = self.settings.value("ProjectPath")
+        self.app_prefs["ProjectPath"] = settings.value("ProjectPath")
 
     def setMainWindowGUI(self):
         """Main window setting"""
@@ -1797,15 +1794,17 @@ class MiniGUI(QMainWindow):
 
     # Auxiliary functions
 
-    def restartTools(self):
-        """This function enables all tools"""
+    def enableMenuAndToolBar(self):
+        """This function enables both menu and tool bar"""
         for button in self.tool_buttons:
             self.tool_buttons[button].setEnabled(True)
         self.manageTools("Select")
+        self.menu_bar.setEnabled(True)
 
-    def stopTools(self):
-        """This function disables all tools"""
+    def disableMenuAndToolBar(self):
+        """This function disables both menu and tool bar"""
         self.manageTools("Select")
+        self.menu_bar.setEnabled(False)
         for button in self.tool_buttons:
             self.tool_buttons[button].setEnabled(False)
 
@@ -2062,9 +2061,9 @@ class MiniGUI(QMainWindow):
         self.net.start()
 
         # Scene modification
-        self.scene.net_running = True
         self.updateNetIndicators()
-        self.stopTools()
+        self.disableMenuAndToolBar()
+        self.scene.net_running = True
 
         # Thread to update automatically the scene with Mininet info
         self.thread_updater = SceneAutoUpdate()
@@ -2099,8 +2098,8 @@ class MiniGUI(QMainWindow):
         self.net = None
 
         # Scene modification
-        self.restartTools()
         self.updateNetIndicators()
+        self.enableMenuAndToolBar()
         self.scene.net_running = False
 
     def accessNet(self):
@@ -2309,12 +2308,12 @@ class MiniGUI(QMainWindow):
 
     def writePreferences(self):
         """This function saves the user's preferences in a external configuration file"""
-        self.settings = QSettings('MiniGUI', 'settings')
-        self.settings.setValue("AppTheme", str(APP_THEME))
-        self.settings.setValue("AppMode", str(self.app_prefs["Mode"]))
-        self.settings.setValue("AppCLI", str(self.app_prefs["CLI"]))
+        settings = QSettings('MiniGUI', 'settings')
+        settings.setValue("AppTheme", str(APP_THEME))
+        settings.setValue("AppMode", str(self.app_prefs["Mode"]))
+        settings.setValue("AppCLI", str(self.app_prefs["CLI"]))
         if self.app_prefs["ProjectPath"]:
-            self.settings.setValue("ProjectPath", str(self.app_prefs["ProjectPath"]))
+            settings.setValue("ProjectPath", str(self.app_prefs["ProjectPath"]))
 
     def changePreferences(self, preference=None):
         """This function allows the user to change some preferences"""
