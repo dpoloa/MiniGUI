@@ -1385,25 +1385,33 @@ class SceneGUI(QGraphicsScene):
         if "nodes" in data:
             nodes_list = data["nodes"]
             for node in nodes_list:
-                node_name = node["name"]
-                node_type = node["type"]
-                node_x_pos = node["x_pos"]
-                node_y_pos = node["y_pos"]
-                node_links = node["links"]
-                node_properties = node["properties"]
-                new_node = self.addSceneNode(node_x_pos, node_y_pos, node_type, node_name, node_properties)
-                new_node.links = node_links
+                try:
+                    node_name = node["name"]
+                    node_type = node["type"]
+                    node_x_pos = node["x_pos"]
+                    node_y_pos = node["y_pos"]
+                    node_links = node["links"]
+                    node_properties = node["properties"]
+                except KeyError:
+                    return
+                else:
+                    new_node = self.addSceneNode(node_x_pos, node_y_pos, node_type, node_name, node_properties)
+                    new_node.links = node_links
 
         # Addition of links to the scene
         if "links" in data:
             links_list = data["links"]
             for link in links_list:
-                link_nodes = link["nodes"]
-                link_state = link["state"]
-                link_name = link["name"]
-                scene_element = []
-                for node_name in link_nodes:
-                    scene_element.append(self.sceneNodes[node_name])
+                try:
+                    link_nodes = link["nodes"]
+                    link_state = link["state"]
+                    link_name = link["name"]
+                except KeyError:
+                    return
+                else:
+                    scene_element = []
+                    for node_name in link_nodes:
+                        scene_element.append(self.sceneNodes[node_name])
 
                 # Associating the links to its correspondent nodes
                 orig_coor = scene_element[0].scenePos() + scene_element[0].boundingRect().center()
@@ -1833,7 +1841,7 @@ class MiniGUI(QMainWindow):
         elif APP_THEME == "light" and self.net is not None:
             self.net_button.setStyleSheet("color: red; height: 50px; width: 60px; font: bold")
         elif APP_THEME == "dark" and self.net is None:
-            self.net_button.setStyleSheet("color: green; height: 50px; width: 60px; font: bold;"
+            self.net_button.setStyleSheet("color: lime; height: 50px; width: 60px; font: bold;"
                                           "hover { background-color: rgb(53, 53, 53)}")
         elif APP_THEME == "dark" and self.net is not None:
             self.net_button.setStyleSheet("color: red; height: 50px; width: 60px; font: bold;"
@@ -1913,13 +1921,16 @@ class MiniGUI(QMainWindow):
 
         if dialogfilename[0] != "":
             file = open(str(dialogfilename[0]), "r")
-            topology_data = json.load(file)
-
-            self.clearProject()
-            self.file = str(dialogfilename[0])
-            self.app_prefs["ProjectPath"] = str(dialogfilename[0])
-            self.setWindowTitle("MiniGUI - " + str(dialogfilename[0]).split("/")[-1])
-            self.scene.loadScene(topology_data)
+            try:
+                topology_data = json.load(file)
+            except json.JSONDecodeError:
+                return None
+            else:
+                self.clearProject()
+                self.file = str(dialogfilename[0])
+                self.app_prefs["ProjectPath"] = str(dialogfilename[0])
+                self.setWindowTitle("MiniGUI - " + str(dialogfilename[0]).split("/")[-1])
+                self.scene.loadScene(topology_data)
 
     def saveProject(self):
         """This function allows the user to store project information in an external file"""
@@ -2039,15 +2050,6 @@ class MiniGUI(QMainWindow):
 
             self.net.configLinkStatus(nodes_linked[0], nodes_linked[1], link_status)
 
-    def buildNet(self):
-        """This function creates and builds the net"""
-        self.net = Mininet(topo=None, build=False)
-
-        self.buildNodes()
-        self.buildLinks()
-
-        self.net.build()
-
     def startNet(self):
         """This function is used to start Mininet"""
         if self.net is not None:
@@ -2057,7 +2059,11 @@ class MiniGUI(QMainWindow):
             return
 
         # Net creation and start
-        self.buildNet()
+        # self.buildNet()
+        self.net = Mininet(topo=None, build=False)
+        self.buildNodes()
+        self.buildLinks()
+        self.net.build()
         self.net.start()
 
         # Scene modification
