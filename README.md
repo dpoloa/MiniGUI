@@ -17,6 +17,7 @@ salir de ella aun cuando la simulación de Mininet seguía activada. Este error 
 la barra de menú cuando Mininet se está ejecutando.
 * Las funciones que incorporan la nueva funcionalidad descrita en el punto anterior han modificado su nombre para 
 adaptarse a su nuevo cometido.
+* Se han añadido cláusulas de excepción en funciones críticas para evitar posibles fallos.
 #### Versión 00.01.05
 Esta nueva versión trae las siguientes novedades/correcciones:
 * Corrige un error que impedía que Mininet pudiera arrancarse.
