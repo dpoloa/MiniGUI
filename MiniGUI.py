@@ -1397,6 +1397,8 @@ class SceneGUI(QGraphicsScene):
                 else:
                     new_node = self.addSceneNode(node_x_pos, node_y_pos, node_type, node_name, node_properties)
                     new_node.links = node_links
+        else:
+            return
 
         # Addition of links to the scene
         if "links" in data:
