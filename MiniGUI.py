@@ -50,6 +50,7 @@ class MiniCLI(threading.Thread):
     def run(self):
         if self.net is not None:
             CLI(self.net)
+            print("CLI execution has finished")
 
 
 class SceneAutoUpdate(QThread):
@@ -263,22 +264,7 @@ class HostDialog(BaseDialog):
         route_layout.setColumnMinimumWidth(5, 10)
         route_widget.setLayout(route_layout)
 
-        if not route_list["Destination"]:
-            route_layout.addWidget(QLabel("There are no entries yet"), 0, 0, 1, -1, Qt.AlignHCenter)
-        else:
-            route_layout.addWidget(QLabel("Destination"), 0, 0)
-            route_layout.addWidget(QLabel("Gateway"), 0, 2)
-            route_layout.addWidget(QLabel("Interface"), 0, 4)
-            route_layout.addWidget(QLabel("Delete route"), 0, 6)
-            for index in range(len(route_list["Destination"])):
-                route_layout.addWidget(QLabel(str(route_list["Destination"][index])), index + 1, 0)
-                route_layout.addWidget(QLabel(str(route_list["Gateway"][index])), index + 1, 2)
-                route_layout.addWidget(QLabel(str(route_list["Interface"][index])), index + 1, 4)
-                del_command = ("ip route del " + str(route_list["Destination"][index]) +
-                               " dev " + route_list["Interface"][index])
-                del_button = QPushButton("Delete")
-                del_button.pressed.connect(lambda command=del_command: self.sendCommandToNet(command, route_widget))
-                route_layout.addWidget(del_button, index + 1, 6)
+        self.updateRoutingTableLayout(route_widget, route_list)
 
         # Connecting action to apply_button
         apply_button.pressed.connect(lambda: self.sendCommandToNet(line_command.text(), route_widget))
@@ -379,9 +365,9 @@ class SwitchDialog(BaseDialog):
         self.setWindowTitle("Switch routing table: " + str(switch.node_name))
         self.setFixedWidth(300)
 
-        self.showRoutingTable()
+        self.showMacDirectionsTable()
 
-    def showRoutingTable(self):
+    def showMacDirectionsTable(self):
         """This function shows the result of command 'ovs-appctl fdb/show' applied on the switch"""
         route_layout = QGridLayout()
         route_layout.setColumnMinimumWidth(1, 10)
@@ -567,22 +553,7 @@ class RouterDialog(BaseDialog):
         route_layout.setColumnMinimumWidth(5, 10)
         route_widget.setLayout(route_layout)
 
-        if not route_list["Destination"]:
-            route_layout.addWidget(QLabel("There are no entries yet"), 0, 0, 1, -1, Qt.AlignHCenter)
-        else:
-            route_layout.addWidget(QLabel("Destination"), 0, 0)
-            route_layout.addWidget(QLabel("Gateway"), 0, 2)
-            route_layout.addWidget(QLabel("Interface"), 0, 4)
-            route_layout.addWidget(QLabel("Delete route"), 0, 6)
-            for index in range(len(route_list["Destination"])):
-                route_layout.addWidget(QLabel(str(route_list["Destination"][index])), index + 1, 0)
-                route_layout.addWidget(QLabel(str(route_list["Gateway"][index])), index + 1, 2)
-                route_layout.addWidget(QLabel(str(route_list["Interface"][index])), index + 1, 4)
-                del_command = ("ip route del " + str(route_list["Destination"][index]) +
-                               " dev " + route_list["Interface"][index])
-                del_button = QPushButton("Delete")
-                del_button.pressed.connect(lambda command=del_command: self.sendCommandToNet(command, route_widget))
-                route_layout.addWidget(del_button, index + 1, 6)
+        self.updateRoutingTableLayout(route_widget, route_list)
 
         # Button connection to certain actions
         send_button.pressed.connect(lambda: self.sendCommandToNet(line_command.text(), route_widget))
@@ -726,7 +697,7 @@ class NameTagGUI(TagGUI):
 
 class NodeGUI(QGraphicsPixmapItem):
     """"Class for node elements"""
-    def __init__(self, x, y, node_type, name=None, properties=None, new_node=False, net_ctrl=None):
+    def __init__(self, x, y, node_type, node_name, properties=None, new_node=False, net_ctrl=None):
         super(NodeGUI, self).__init__()
 
         # Pointer to main program
@@ -735,7 +706,7 @@ class NodeGUI(QGraphicsPixmapItem):
         # Initial attributes
         self.width = 64
         self.height = 64
-        self.node_name = name
+        self.node_name = node_name
         self.node_type = node_type
         self.icon = None
         self.image = None
@@ -1023,12 +994,14 @@ class LinkGUI(QGraphicsLineItem):
     def __init__(self, x1, y1, x2, y2, net_ctrl=None):
         super(LinkGUI, self).__init__(x1, y1, x2, y2)
 
+        # Pointer to main program
+        self.net_ctrl = net_ctrl
+
         # Initial attributes
         self.link_name = ""
         self.nodes = []
         self.is_up = True
         self.scene_tags = {}
-        self.net_ctrl = net_ctrl
 
         # Aesthetic attribute
         self.pen = QPen()
@@ -1393,6 +1366,12 @@ class SceneGUI(QGraphicsScene):
                     node_links = node["links"]
                     node_properties = node["properties"]
                 except KeyError:
+                    dialog = QMessageBox()
+                    dialog.setIcon(QMessageBox.Warning)
+                    dialog.setTextFormat(Qt.RichText)
+                    dialog.setText("<b>Mininet topology file corrupted</b>")
+                    dialog.setInformativeText("Project nodes data is corrupted. Please, verify JSON format is correct.")
+                    dialog.exec()
                     return
                 else:
                     new_node = self.addSceneNode(node_x_pos, node_y_pos, node_type, node_name, node_properties)
@@ -1409,6 +1388,12 @@ class SceneGUI(QGraphicsScene):
                     link_state = link["state"]
                     link_name = link["name"]
                 except KeyError:
+                    dialog = QMessageBox()
+                    dialog.setIcon(QMessageBox.Warning)
+                    dialog.setTextFormat(Qt.RichText)
+                    dialog.setText("<b>Mininet topology file corrupted</b>")
+                    dialog.setInformativeText("Project links data is corrupted. Please, verify JSON format is correct.")
+                    dialog.exec()
                     return
                 else:
                     scene_element = []
@@ -1540,16 +1525,16 @@ class SceneGUI(QGraphicsScene):
                 self.selectSceneItem(item)
             else:
                 self.clearSelection()
+        elif self.current_tool == "Delete":
+            item = self.itemAt(event.scenePos(), QTransform())
+            if item is not None and not isinstance(item, TagGUI):
+                self.removeSceneItem(item)
         elif self.current_tool == "Link":
             item = self.itemAt(event.scenePos(), QTransform())
             if item is not None and isinstance(item, NodeGUI):
                 self.link_orig_node = item
                 offset = item.boundingRect().center()
                 self.addSceneLink(item.scenePos().x() + offset.x(), item.scenePos().y() + offset.y())
-        elif self.current_tool == "Delete":
-            item = self.itemAt(event.scenePos(), QTransform())
-            if item is not None and not isinstance(item, TagGUI):
-                self.removeSceneItem(item)
         else:
             if event.button() == Qt.LeftButton:
                 self.addSceneNode(event.scenePos().x(), event.scenePos().y(), self.current_tool)
@@ -2054,14 +2039,8 @@ class MiniGUI(QMainWindow):
 
     def startNet(self):
         """This function is used to start Mininet"""
-        if self.net is not None:
-            return
-        elif not self.scene.items():
-            self.emptySceneDialog()
-            return
 
         # Net creation and start
-        # self.buildNet()
         self.net = Mininet(topo=None, build=False)
         self.buildNodes()
         self.buildLinks()
@@ -2093,8 +2072,6 @@ class MiniGUI(QMainWindow):
 
     def stopNet(self):
         """This function stops the Mininet execution"""
-        if self.net is None:
-            return
 
         # XTerm cleanse
         cleanUpScreens()
@@ -2113,8 +2090,12 @@ class MiniGUI(QMainWindow):
     def accessNet(self):
         """THis function starts/stops Mininet execution and updates its related button accordingly"""
         if self.net_button.text() == "Start":
-            self.startNet()
-            self.net_button.setText("Stop")
+            if not self.scene.items():
+                self.emptySceneDialog()
+                return
+            else:
+                self.startNet()
+                self.net_button.setText("Stop")
         elif self.net_button.text() == "Stop":
             self.stopNet()
             self.net_button.setText("Start")
