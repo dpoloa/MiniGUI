@@ -18,6 +18,8 @@ para facilitar su selección/eliminación. Se han modificado funciones relaciona
 experiencia de usuario.
 * Se han modificado el color de las etiquetas de dirección IP en modo oscuro para permitir una mayor diferenciación
 respecto al nuevo grosor de las líneas.
+* Se ha modificado la apariencia de los menús contextuales de los nodos. Ahora aparecen listadas todas las opciones en 
+todo momento, pero algunas de ellas están desactivadas si Mininet no está activo.
 #### Versión 00.01.06
 En esta nueva versión:
 * Se ha modificado el nombre de la clase CanvasGUI, ahora SceneGUI, para adaptarse mejor a lo que representa.

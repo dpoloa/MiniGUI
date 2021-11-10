@@ -928,21 +928,29 @@ class NodeGUI(QGraphicsPixmapItem):
 
         # Contextual menu changes according to the node's type: if Switch, menu is different
         if self.node_type != "Switch":
+            # Properties menu
             menu_text = str(self.node_type) + " properties"
             properties_act = QAction(menu_text, self.net_controller)
             properties_act.setStatusTip("Open " + str(self.node_type).lower() + " properties menu")
             properties_act.triggered.connect(lambda: self.nodePropertiesDialog())
             context_menu.addAction(properties_act)
-            if scene.net_running:
-                xterm_act = QAction("XTerm", self.net_controller)
-                xterm_act.setStatusTip("Open " + str(self.node_type).lower() + " properties menu")
-                xterm_act.triggered.connect(lambda: self.net_controller.xterm(name=self.node_name))
-                context_menu.addAction(xterm_act)
-        elif self.node_type == "Switch" and scene.net_running:
-            routing_act = QAction("See routing table", self.net_controller)
-            routing_act.setStatusTip("See switch routing table")
+
+            # XTerm
+            xterm_act = QAction("XTerm", self.net_controller)
+            xterm_act.setStatusTip("Open " + str(self.node_type).lower() + " properties menu")
+            xterm_act.triggered.connect(lambda: self.net_controller.xterm(name=self.node_name))
+            context_menu.addAction(xterm_act)
+            if not scene.net_running:
+                xterm_act.setEnabled(False)
+
+        elif self.node_type == "Switch":
+            # Switch MAC
+            routing_act = QAction("See MAC addresses", self.net_controller)
+            routing_act.setStatusTip("See switch learned MAC addresses")
             routing_act.triggered.connect(lambda: self.nodePropertiesDialog())
             context_menu.addAction(routing_act)
+            if not scene.net_running:
+                routing_act.setEnabled(False)
 
         action = context_menu.exec(event.screenPos())
 
@@ -995,7 +1003,7 @@ class LinkGUI(QGraphicsLineItem):
         super(LinkGUI, self).__init__(x1, y1, x2, y2)
 
         # Pointer to main program
-        self.net_ctrl = net_ctrl
+        self.net_controller = net_ctrl
 
         # Initial attributes
         self.link_name = ""
