@@ -14,6 +14,8 @@ En esta versión se han introducido los siguientes cambios:
 todo momento, pero algunas de ellas están desactivadas si Mininet no está activo.
 * Se ha cambiado el código relacionado con los botones de herramienta, los cuales fallaban en contadas ocasiones. Se ha
 subsanado el error.
+* Se ha arreglado un fallo que, al crear un enlace entre dos nodos y abrir el menú contextual de uno de ellos antes de
+finalizar la unión, creaba una línea en la escena y no podía eliminarse. 
 #### Versión 00.01.07
 La aplicación ha tenido los siguientes cambios:
 * Se ha modificado la función updateSceneInfo de la clase MiniGUI para evitar errores debido a la interferencia entre 

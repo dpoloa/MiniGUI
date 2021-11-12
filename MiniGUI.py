@@ -1560,12 +1560,16 @@ class SceneGUI(QGraphicsScene):
             item = self.itemAt(event.scenePos(), QTransform())
             if item is not None and not isinstance(item, TagGUI):
                 self.removeSceneItem(item)
-        elif self.current_tool == "Link":
+        elif self.current_tool == "Link" and self.new_link is None:
             item = self.itemAt(event.scenePos(), QTransform())
             if item is not None and isinstance(item, NodeGUI):
                 self.link_orig_node = item
                 offset = item.boundingRect().center()
                 self.addSceneLink(item.scenePos().x() + offset.x(), item.scenePos().y() + offset.y())
+        elif self.current_tool == "Link" and self.new_link is not None:
+            self.removeItem(self.new_link)
+            self.link_orig_node = None
+            self.new_link = None
         else:
             if event.button() == Qt.LeftButton:
                 self.addSceneNode(event.scenePos().x(), event.scenePos().y(), self.current_tool)
