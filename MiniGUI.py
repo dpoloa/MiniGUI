@@ -1623,6 +1623,9 @@ class MiniGUI(QMainWindow):
         self.thread_cli = None
         self.thread_updater = None
 
+        # Modification of internal properties
+        self.setContextMenuPolicy(Qt.NoContextMenu)
+
         # Retrieving the user preferences saved in other sessions
         self.setPreferencesGUI()
 
@@ -1779,7 +1782,6 @@ class MiniGUI(QMainWindow):
         # Tool bar initialization
         self.tool_bar.setMovable(False)
         self.tool_bar.setIconSize(QSize(50, 50))
-        self.tool_bar.setContextMenuPolicy(Qt.PreventContextMenu)
 
         # Setting up tools
         button_id = 1
@@ -1820,6 +1822,9 @@ class MiniGUI(QMainWindow):
         net_button.clicked.connect(lambda: self.accessNet())
         self.tool_bar.addWidget(net_button)
         self.net_button = net_button
+
+        # Choosing "Select" tool as default
+        self.manageTools("Select")
 
     # Auxiliary functions
 

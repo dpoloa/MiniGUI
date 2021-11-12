@@ -8,6 +8,12 @@ los elementos básicos: hubs, switches, routers y ordenadores/hosts (por ahora, 
 el futuro). Este programa está escrito en Python, y usa como paquete gráfico Qt, con su adaptación al lenguaje usado 
 como PyQt5.
 ## Historial de versiones
+#### Versión 00.01.08
+En esta versión se han introducido los siguientes cambios:
+* Se ha modificado la apariencia de los menús contextuales de los nodos. Ahora aparecen listadas todas las opciones en 
+todo momento, pero algunas de ellas están desactivadas si Mininet no está activo.
+* Se ha cambiado el código relacionado con los botones de herramienta, los cuales fallaban en contadas ocasiones. Se ha
+subsanado el error.
 #### Versión 00.01.07
 La aplicación ha tenido los siguientes cambios:
 * Se ha modificado la función updateSceneInfo de la clase MiniGUI para evitar errores debido a la interferencia entre 
@@ -18,10 +24,6 @@ para facilitar su selección/eliminación. Se han modificado funciones relaciona
 experiencia de usuario.
 * Se han modificado el color de las etiquetas de dirección IP en modo oscuro para permitir una mayor diferenciación
 respecto al nuevo grosor de las líneas.
-* Se ha modificado la apariencia de los menús contextuales de los nodos. Ahora aparecen listadas todas las opciones en 
-todo momento, pero algunas de ellas están desactivadas si Mininet no está activo.
-* Se ha cambiado el código relacionado con los botones de herramienta, los cuales fallaban en contadas ocasiones. Se ha
-subsanado el error.
 #### Versión 00.01.06
 En esta nueva versión:
 * Se ha modificado el nombre de la clase CanvasGUI, ahora SceneGUI, para adaptarse mejor a lo que representa.
