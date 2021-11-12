@@ -1610,7 +1610,7 @@ class MiniGUI(QMainWindow):
         self.tool_bar = QToolBar()
         self.status_bar = QStatusBar()
         self.net_button = None
-        self.tool_buttons = {}
+        self.tool_buttons = QButtonGroup()
         self.net_indicators = {}
 
         # Scene variables initialization
@@ -1781,24 +1781,31 @@ class MiniGUI(QMainWindow):
         self.tool_bar.setContextMenuPolicy(Qt.PreventContextMenu)
 
         # Setting up tools
+        button_id = 1
         images = imagesMiniGUI()
         for button in images:
-            # Little spacer for aesthetic reason
-            if button == "Select":
-                little_spacer = QWidget()
-                little_spacer.setFixedWidth(100)
-                self.tool_bar.addWidget(little_spacer)
-
+            # Creation of button
             b = QToolButton()
             b.setCheckable(True)
             b.setText(str(button))
             b.setToolTip(str(button))
             b.setIcon(QIcon(images[button]))
             b.setToolButtonStyle(Qt.ToolButtonIconOnly)
-            b.pressed.connect(lambda tool_name=button: self.manageTools(tool_name))
 
+            # Little spacer for aesthetic reason
+            if button == "Select":
+                little_spacer = QWidget()
+                little_spacer.setFixedWidth(100)
+                self.tool_bar.addWidget(little_spacer)
+                b.setChecked(True)
+
+            # Adding button to tool bar and button group
             self.tool_bar.addWidget(b)
-            self.tool_buttons[button] = b
+            self.tool_buttons.addButton(b, button_id)
+            button_id = button_id + 1
+
+        # Connecting button group with method
+        self.tool_buttons.buttonClicked.connect(lambda: self.manageTools(self.tool_buttons.checkedButton().text()))
 
         # Big spacer for aesthetic purposes
         big_spacer = QWidget()
@@ -1813,43 +1820,31 @@ class MiniGUI(QMainWindow):
         self.tool_bar.addWidget(net_button)
         self.net_button = net_button
 
-        # Select tool as default
-        self.scene.current_tool = "Select"
-        self.tool_buttons["Select"].setChecked(True)
-
     # Auxiliary functions
 
     def enableMenuAndToolBar(self):
         """This function enables both menu and tool bar"""
-        for button in self.tool_buttons:
-            self.tool_buttons[button].setEnabled(True)
-        self.manageTools("Select")
         self.menu_bar.setEnabled(True)
+        self.manageTools(self.tool_buttons.checkedButton().text())
+        for button in self.tool_buttons.buttons():
+            button.setEnabled(True)
 
     def disableMenuAndToolBar(self):
         """This function disables both menu and tool bar"""
         self.manageTools("Select")
         self.menu_bar.setEnabled(False)
-        for button in self.tool_buttons:
-            self.tool_buttons[button].setEnabled(False)
+        for button in self.tool_buttons.buttons():
+            button.setEnabled(False)
 
     def manageTools(self, tool_name):
         """Method to check up the current tool and manage the buttons"""
-        if tool_name == self.scene.current_tool:
-            if tool_name == "Select":
-                self.tool_buttons["Select"].toggle()
-            else:
-                self.tool_buttons["Select"].setChecked(True)
-                self.scene.current_tool = "Select"
-        else:
-            self.tool_buttons[self.scene.current_tool].toggle()
-            self.scene.current_tool = tool_name
+        self.scene.current_tool = tool_name
 
     def updateToolBarIcons(self):
         """This function updates the icon for each tool"""
         images = imagesMiniGUI()
-        for button in self.tool_buttons:
-            self.tool_buttons[button].setIcon(QIcon(images[self.tool_buttons[button].text()]))
+        for button in self.tool_buttons.buttons():
+            button.setIcon(QIcon(images[button.text()]))
 
     def updateNetButtonStyle(self):
         """This function updates the style of the Mininet action button"""
