@@ -839,7 +839,7 @@ class NodeGUI(QGraphicsPixmapItem):
         else:
             return
 
-        if dialog.exec() and self.node_type != "Switch":
+        if dialog.exec() and self.node_type != "Switch" and dialog.results:
             scene = self.scene()
 
             # Node name
@@ -850,14 +850,15 @@ class NodeGUI(QGraphicsPixmapItem):
                 self.changeSceneNameTag(new_name)
 
             # IP Address per Ethernet interface
-            for eth in dialog.results["eth_intfs_ip"]:
-                new_eth_ip = dialog.results["eth_intfs_ip"][eth].text()
-                new_eth_mask = dialog.results["eth_intfs_mask"][eth].text()
-                if len(new_eth_ip) > 0 and len(new_eth_mask) > 0:
-                    self.properties["eth_intfs"][eth] = str(new_eth_ip) + "/" + str(new_eth_mask)
-                    if eth == (self.node_name + "-eth0"):
-                        self.properties["IP"] = new_eth_ip
-                        self.properties["PrefixLen"] = new_eth_mask
+            if "eth_intfs_ip" in dialog.results:
+                for eth in dialog.results["eth_intfs_ip"]:
+                    new_eth_ip = dialog.results["eth_intfs_ip"][eth].text()
+                    new_eth_mask = dialog.results["eth_intfs_mask"][eth].text()
+                    if len(new_eth_ip) > 0 and len(new_eth_mask) > 0:
+                        self.properties["eth_intfs"][eth] = str(new_eth_ip) + "/" + str(new_eth_mask)
+                        if eth == (self.node_name + "-eth0"):
+                            self.properties["IP"] = new_eth_ip
+                            self.properties["PrefixLen"] = new_eth_mask
 
             # Link status
             if "eth_intfs_state" in dialog.results:
