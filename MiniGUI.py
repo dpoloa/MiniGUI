@@ -325,9 +325,6 @@ class HostDialog(BaseDialog):
 
     def updateRoutingTableLayout(self, route_widget, route_list):
         """This function is in charge of modifying the dynamic widget and update it"""
-        if not isinstance(route_widget, QWidget):
-            return
-
         # Dynamic widget's layout emptying
         route_layout = route_widget.layout()
         if route_layout is not None:
@@ -839,7 +836,7 @@ class NodeGUI(QGraphicsPixmapItem):
         else:
             return
 
-        if dialog.exec() and self.node_type != "Switch" and dialog.results:
+        if dialog.exec() and self.node_type != "Switch":
             scene = self.scene()
 
             # Node name
@@ -938,7 +935,7 @@ class NodeGUI(QGraphicsPixmapItem):
 
             # XTerm
             xterm_act = QAction("XTerm", self.net_controller)
-            xterm_act.setStatusTip("Open " + str(self.node_type).lower() + " properties menu")
+            xterm_act.setStatusTip("Open " + str(self.node_type).lower() + " XTerm")
             xterm_act.triggered.connect(lambda: self.net_controller.xterm(name=self.node_name))
             context_menu.addAction(xterm_act)
             if not scene.net_running:
@@ -1570,10 +1567,9 @@ class SceneGUI(QGraphicsScene):
             self.removeItem(self.new_link)
             self.link_orig_node = None
             self.new_link = None
-        else:
-            if event.button() == Qt.LeftButton:
-                self.addSceneNode(event.scenePos().x(), event.scenePos().y(), self.current_tool)
-                self.selectSceneItem(self.focusItem())
+        elif event.button() == Qt.LeftButton:
+            self.addSceneNode(event.scenePos().x(), event.scenePos().y(), self.current_tool)
+            self.selectSceneItem(self.focusItem())
 
     def mouseMoveEvent(self, event):
         """Handler for mouse move events. Now only used when link tool is selected to move link along with mouse"""
@@ -1586,7 +1582,7 @@ class SceneGUI(QGraphicsScene):
         super().mouseReleaseEvent(event)
         if self.current_tool == "Link" and self.new_link is not None:
             item = self.itemAt(event.scenePos(), QTransform())
-            if isinstance(item, NodeGUI) and self.checkFeasibleLink(item):
+            if item is not None and self.checkFeasibleLink(item):
                 offset = item.boundingRect().center()
                 self.new_link.updateEndPoint(item.scenePos().x() + offset.x(), item.scenePos().y() + offset.y())
                 self.selectSceneItem(self.new_link)
