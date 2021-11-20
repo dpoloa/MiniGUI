@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
 
 """
-MiniGUI: Interfaz gráfica de usuario para Mininet
+MiniGUI: Graphical User Interface for Mininet
 
-Nombre provisional y programa en desarrollo. Este programa
-permite al usuario utilizar una interfaz gráfica con la
-cual puede crear redes de comunicación de una forma
-sencilla.
+This program allows the user to create a computer
+network in an easy and comfortable way. It is related
+to the Final Degree Project for Telecommunications
+Technologies Degree from Universidad Rey Juan Carlos.
 
-Autor:          Daniel Polo Álvarez
-Correo:         d.poloa@alumnos.urjc.es
-Universidad:    Universidad Rey Juan Carlos
+Author:         Daniel Polo Álvarez
+Email:          d.poloa@alumnos.urjc.es
+University:     Universidad Rey Juan Carlos
+
+Mentors:        José Centeno González (jose.centeno@urjc.es)
+                Eva María Castro Barbero (eva.castro@urjc.es)
 """
 
 # PyQt5 package import
@@ -18,7 +21,13 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 
-# Python package import
+# Mininet package import
+from mininet.net import Mininet
+from mininet.term import makeTerm, cleanUpScreens
+from mininet.node import Node
+from mininet.cli import CLI
+
+# Python general packages import
 import subprocess
 import threading
 import math
@@ -28,13 +37,7 @@ import sys
 import os
 import re
 
-# Mininet package import
-from mininet.net import Mininet
-from mininet.term import makeTerm, cleanUpScreens
-from mininet.node import Node
-from mininet.cli import CLI
-
-# Constants
+# Global application variables
 DEFAULT_TIMER = 5.0
 APP_THEME = "light"
 
@@ -42,7 +45,10 @@ APP_THEME = "light"
 # Thread classes
 
 class MiniCLI(threading.Thread):
-    """Thread class for Mininet CLI object, needed to not conflict with PyQt5 event loop"""
+    """
+    Thread class for Mininet CLI, needed to not conflict
+    with PyQt5 event loop
+    """
     def __init__(self, net=None):
         super(MiniCLI, self).__init__(daemon=True)
         self.net = net
@@ -54,7 +60,10 @@ class MiniCLI(threading.Thread):
 
 
 class SceneAutoUpdate(QThread):
-    """Thread class to update automatically the scene with information from Mininet objects"""
+    """
+    Thread class to update automatically the scene with information
+    from Mininet simulation
+    """
     updateSignal = pyqtSignal()
 
     def __init__(self, timer=None):
@@ -92,8 +101,8 @@ class Router(Node):
 
 class BaseDialog(QDialog):
     """Base class for hosts, switches and routers dialogs"""
-    def __init__(self, parent=None):
-        super(BaseDialog, self).__init__(parent=parent)
+    def __init__(self):
+        super(BaseDialog, self).__init__()
 
         # Default buttons
         button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
@@ -107,9 +116,13 @@ class BaseDialog(QDialog):
 
 
 class HostDialog(BaseDialog):
-    """Dialog class for hosts"""
-    def __init__(self, host, parent=None):
-        super(HostDialog, self).__init__(parent=parent)
+    """Dialog class to display host information"""
+    def __init__(self, host):
+        """
+        :param host: reference to node object
+        :type host: NodeGUI
+        """
+        super(HostDialog, self).__init__()
 
         # Class attributes
         self.host = host
@@ -119,10 +132,11 @@ class HostDialog(BaseDialog):
         self.setWindowTitle("Host properties: " + str(host.node_name))
         self.setFixedWidth(450)
 
+        # Host structure initialization
         self.setHostDialog()
 
     def setHostDialog(self):
-        """This function structures the base layout in tabs"""
+        """Builds the base layout, dividing it in tabs"""
         tab_menu = QTabWidget()
         self.base_layout.insertWidget(0, tab_menu)
 
@@ -134,12 +148,17 @@ class HostDialog(BaseDialog):
         tab_menu.addTab(self.setRoutingTable(), "Routing")
 
     def setHostInformation(self):
-        """Function to show the host's name and retrieve it if changed by the user"""
+        """Displays the host's name and saves its changes
+
+        :returns widget with interactive fields
+        :rtype QWidget
+        """
+        # Creation of tab's main widget and layout
         widget = QWidget()
         layout = QVBoxLayout()
         widget.setLayout(layout)
 
-        # Hostname
+        # Host's name label
         name_label = QLabel("Host name")
         name_edit_label = QLineEdit(str(self.host.node_name))
         self.results["node_name"] = name_edit_label
@@ -151,7 +170,12 @@ class HostDialog(BaseDialog):
         return widget
 
     def setEthernetIntfs(self):
-        """This function shows the Ethernet interfaces that the host has"""
+        """Displays the host's Ethernet interfaces
+
+        :returns widget with interactive fields
+        :rtype QWidget
+        """
+        # Creation of tab's main widget and layout
         widget = QWidget()
         eth_layout = QGridLayout()
         eth_layout.setAlignment(Qt.AlignTop)
@@ -178,10 +202,12 @@ class HostDialog(BaseDialog):
 
         index = 1
         for interface in host_intfs:
+            # Interface name label and slash separator
             intf_name_label = QLabel(str(interface))
             eth_layout.addWidget(intf_name_label, index + 1, 0, Qt.AlignRight)
             eth_layout.addWidget(QLabel("/"), index + 1, 3)
 
+            # Retrieving interface information
             if host_intfs[interface] == "":
                 eth_ip = ""
                 eth_mask = ""
@@ -189,18 +215,20 @@ class HostDialog(BaseDialog):
                 eth_ip = host_intfs[interface].split("/")[0]
                 eth_mask = host_intfs[interface].split("/")[1]
 
+            # IP address label
             intf_ip_label = QLineEdit(str(eth_ip))
             intf_ip_list[interface] = intf_ip_label
+            eth_layout.addWidget(intf_ip_label, index + 1, 2)
 
+            # Netmask label
             intf_mask_label = QLineEdit(str(eth_mask))
             intf_mask_list[interface] = intf_mask_label
-
-            eth_layout.addWidget(intf_ip_label, index + 1, 2)
             eth_layout.addWidget(intf_mask_label, index + 1, 4)
 
+            # Interface (& link) status
             intf_state_button = QCheckBox()
             intf_id = self.host.searchLinkByIntf(interface)
-            if host_scene.sceneLinks[intf_id].isLinkUp():
+            if host_scene.scene_links[intf_id].isLinkUp():
                 intf_state_button.setChecked(True)
 
             intf_state_list[interface] = intf_state_button
@@ -215,12 +243,18 @@ class HostDialog(BaseDialog):
         return widget
 
     def setRoutingTable(self):
-        """This function shows the routing table of the host"""
+        """Displays the host's updated routing table
+
+        :returns widget with interactive fields
+        :rtype QWidget
+        """
+        # Creation of tab's main widget and layout
         widget = QWidget()
         layout = QVBoxLayout()
         layout.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
         widget.setLayout(layout)
 
+        # 1st case: Mininet simulation is not running
         scene = self.host.scene()
         if not scene.net_running:
             label = QLabel("Routing table is not available as Mininet network is not active")
@@ -230,7 +264,8 @@ class HostDialog(BaseDialog):
             layout.addStretch()
             return widget
 
-        route_list = self.host.net_controller.getRoutingTable(self.host)
+        # 2nd case: error at retrieving the routing table
+        route_list = self.host.net_controller.getNetNodeRoutingTable(self.host)
         if route_list == "Error":
             label = QLabel("An error occurred getting the routing table. Please, restart the dialog")
             label.setAlignment(Qt.AlignHCenter)
@@ -242,6 +277,7 @@ class HostDialog(BaseDialog):
         # Apply command layout
         layout.addWidget(QLabel("Write down your route / ip route command:"))
 
+        # Widget and layout creation for line command field
         widget_top = QWidget()
         layout_top = QHBoxLayout()
         layout_top.setContentsMargins(0, 0, 0, 0)
@@ -274,10 +310,18 @@ class HostDialog(BaseDialog):
 
         return widget
 
-    # Auxiliary functions for dynamic widget
+    # Auxiliary functions for dynamic widget from routing table tab
 
     def sendCommandToNet(self, command, widget):
-        """This function sends a command to the Mininet object and retrieves its output"""
+        """
+        Filters the command sent by the user and, if correct, sends it
+        adn retrieves the output from Mininet simulation.
+
+        :param command: instruction introduced by the user
+        :type command: str
+        :param widget: dynamic widget to be updated (if needed)
+        :type widget: QWidget
+        """
         # Command filtering: checking beginning of command
         if not (command.startswith("route") or command.startswith("ip route")):
             dialog = QMessageBox(self)
@@ -309,7 +353,7 @@ class HostDialog(BaseDialog):
                 return
 
         # If appropriate, command is sent and output is retrieved
-        output = self.host.net_controller.updateRoutingTable(self.host, command)
+        output = self.host.net_controller.updateNetNodeRoutingTable(self.host, command)
         if output is not None:
             dialog = QMessageBox(self)
             dialog.setIcon(QMessageBox.Warning)
@@ -320,11 +364,17 @@ class HostDialog(BaseDialog):
             dialog.setDetailedText(str(output))
             dialog.exec()
         else:
-            route_list = self.host.net_controller.getRoutingTable(self.host)
+            route_list = self.host.net_controller.getNetNodeRoutingTable(self.host)
             self.updateRoutingTableLayout(widget, route_list)
 
     def updateRoutingTableLayout(self, route_widget, route_list):
-        """This function is in charge of modifying the dynamic widget and update it"""
+        """Modifies the dynamic widget updating the host's routing list
+
+        :param route_widget: widget in charge of displaying the routing table
+        :type route_widget: QWidget
+        :param route_list: dictionary with a tabulated routing table information
+        :type route_list: dict
+        """
         # Dynamic widget's layout emptying
         route_layout = route_widget.layout()
         if route_layout is not None:
@@ -351,9 +401,13 @@ class HostDialog(BaseDialog):
 
 
 class SwitchDialog(BaseDialog):
-    """Dialog class for switches"""
-    def __init__(self, switch, parent=None):
-        super(SwitchDialog, self).__init__(parent=parent)
+    """Dialog class to display switch information"""
+    def __init__(self, switch):
+        """
+        :param switch: reference to node object
+        :type switch: NodeGUI
+        """
+        super(SwitchDialog, self).__init__()
 
         # Class attributes
         self.switch = switch
@@ -362,10 +416,11 @@ class SwitchDialog(BaseDialog):
         self.setWindowTitle("Switch routing table: " + str(switch.node_name))
         self.setFixedWidth(300)
 
+        # Switch structure initialization
         self.showMacDirectionsTable()
 
     def showMacDirectionsTable(self):
-        """This function shows the result of command 'ovs-appctl fdb/show' applied on the switch"""
+        """Shows the result of command 'ovs-appctl fdb/show' applied on the switch"""
         route_layout = QGridLayout()
         route_layout.setColumnMinimumWidth(1, 10)
         route_layout.setColumnMinimumWidth(3, 10)
@@ -391,9 +446,13 @@ class SwitchDialog(BaseDialog):
 
 
 class RouterDialog(BaseDialog):
-    """Dialog class for routers"""
-    def __init__(self, router, parent=None):
-        super(RouterDialog, self).__init__(parent=parent)
+    """Dialog class to display router information"""
+    def __init__(self, router):
+        """
+        :param router: reference to node object
+        :type router: NodeGUI
+        """
+        super(RouterDialog, self).__init__()
 
         # Class attributes
         self.router = router
@@ -403,10 +462,11 @@ class RouterDialog(BaseDialog):
         self.setWindowTitle("Router properties: " + str(router.node_name))
         self.setFixedWidth(450)
 
+        # Router structure initialization
         self.setRouterDialog()
 
     def setRouterDialog(self):
-        """This function structures the base layout in tabs"""
+        """Builds the base layout, dividing it in tabs"""
         tab_menu = QTabWidget()
         self.base_layout.insertWidget(0, tab_menu)
 
@@ -414,16 +474,21 @@ class RouterDialog(BaseDialog):
         tab_menu.addTab(self.setRouterInformation(), "Information")
         # Second tab: Ethernet interfaces
         tab_menu.addTab(self.setEthernetIntfs(), "Interfaces")
-        # Third tab: Routing table
+        # Third tab: routing table
         tab_menu.addTab(self.setRoutingTable(), "Routing")
 
     def setRouterInformation(self):
-        """Function to show the router's name and retrieve it if changed by the user"""
+        """Displays the router's name and saves its changes
+
+        :returns widget with interactive fields
+        :rtype QWidget
+        """
+        # Creation of tab's main widget and layout
         widget = QWidget()
         layout = QVBoxLayout()
         widget.setLayout(layout)
 
-        # Router name
+        # Router's name label
         name_label = QLabel("Router name")
         name_edit_label = QLineEdit(str(self.router.node_name))
         self.results["node_name"] = name_edit_label
@@ -435,7 +500,12 @@ class RouterDialog(BaseDialog):
         return widget
 
     def setEthernetIntfs(self):
-        """This function shows the Ethernet interfaces that the router has"""
+        """Displays the router's Ethernet interfaces
+
+        :returns widget with interactive fields
+        :rtype QWidget
+        """
+        # Creation of tab's main widget and layout
         widget = QWidget()
         eth_layout = QGridLayout()
         eth_layout.setAlignment(Qt.AlignTop)
@@ -462,10 +532,12 @@ class RouterDialog(BaseDialog):
 
         index = 1
         for interface in router_intfs:
+            # Interface name label
             intf_name_label = QLabel(str(interface))
             eth_layout.addWidget(intf_name_label, index + 1, 0, Qt.AlignRight)
             eth_layout.addWidget(QLabel("/"), index + 1, 3)
 
+            # Retrieving interface information
             if router_intfs[interface] == "":
                 eth_ip = ""
                 eth_mask = ""
@@ -473,18 +545,20 @@ class RouterDialog(BaseDialog):
                 eth_ip = router_intfs[interface].split("/")[0]
                 eth_mask = router_intfs[interface].split("/")[1]
 
+            # IP address label
             intf_ip_label = QLineEdit(str(eth_ip))
             intf_ip_list[interface] = intf_ip_label
+            eth_layout.addWidget(intf_ip_label, index + 1, 2)
 
+            # Netmask label
             intf_mask_label = QLineEdit(str(eth_mask))
             intf_mask_list[interface] = intf_mask_label
-
-            eth_layout.addWidget(intf_ip_label, index + 1, 2)
             eth_layout.addWidget(intf_mask_label, index + 1, 4)
 
+            # Interface (& link) status
             intf_state_button = QCheckBox()
             intf_id = self.router.searchLinkByIntf(interface)
-            if router_scene.sceneLinks[intf_id].isLinkUp():
+            if router_scene.scene_links[intf_id].isLinkUp():
                 intf_state_button.setChecked(True)
 
             intf_state_list[interface] = intf_state_button
@@ -499,13 +573,18 @@ class RouterDialog(BaseDialog):
         return widget
 
     def setRoutingTable(self):
-        """This function shows the routing table of the router"""
+        """Displays the router's updated routing table
+
+        :returns widget with interactive fields
+        :rtype QWidget
+        """
+        # Creation of tab's main widget and layout
         widget = QWidget()
         layout = QVBoxLayout()
         layout.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
         widget.setLayout(layout)
 
-        # Checking if scene is available. If not, data cannot be retrieved.
+        # 1st case: Mininet simulation is not running
         scene = self.router.scene()
         if not scene.net_running:
             label = QLabel("Routing table is not available as Mininet network is not active")
@@ -515,8 +594,8 @@ class RouterDialog(BaseDialog):
             layout.addStretch()
             return widget
 
-        # Checking if router has entries in its routing table. If there is an error, message is shown.
-        route_list = self.router.net_controller.getRoutingTable(self.router)
+        # 2nd case: error at retrieving the routing table
+        route_list = self.router.net_controller.getNetNodeRoutingTable(self.router)
         if route_list == "Error":
             label = QLabel("An error occurred getting the routing table. Please, restart the dialog")
             label.setAlignment(Qt.AlignHCenter)
@@ -525,9 +604,10 @@ class RouterDialog(BaseDialog):
             layout.addStretch()
             return widget
 
-        # Design for the top layout
+        # Apply command layout
         layout.addWidget(QLabel("Write down your route / ip route command:"))
 
+        # Widget and layout creation for line command field
         widget_top = QWidget()
         layout_top = QHBoxLayout()
         layout_top.setContentsMargins(0, 0, 0, 0)
@@ -537,10 +617,10 @@ class RouterDialog(BaseDialog):
         line_command = QLineEdit()
         layout_top.addWidget(line_command)
 
-        send_button = QPushButton("Apply")
-        layout_top.addWidget(send_button)
+        apply_button = QPushButton("Apply")
+        layout_top.addWidget(apply_button)
 
-        # Design for the dynamic widget (container of the routing table)
+        # Routing table widget
         route_widget = QWidget()
         layout.addWidget(route_widget)
 
@@ -552,18 +632,26 @@ class RouterDialog(BaseDialog):
 
         self.updateRoutingTableLayout(route_widget, route_list)
 
-        # Button connection to certain actions
-        send_button.pressed.connect(lambda: self.sendCommandToNet(line_command.text(), route_widget))
-        send_button.pressed.connect(lambda: line_command.clear())
+        # Connecting action to apply_button
+        apply_button.pressed.connect(lambda: self.sendCommandToNet(line_command.text(), route_widget))
+        apply_button.pressed.connect(lambda: line_command.clear())
 
         layout.addStretch()
 
         return widget
 
-    # Auxiliary functions to dynamize the dialog
+    # Auxiliary functions for dynamic widget from routing table tab
 
     def sendCommandToNet(self, command, widget):
-        """This function sends a command to the Mininet object and retrieves its output"""
+        """
+        Filters the command sent by the user and, if correct, sends it
+        and retrieves the output from Mininet simulation.
+
+        :param command: instruction introduced by the user
+        :type command: str
+        :param widget: dynamic widget to be updated (if needed)
+        :type widget: QWidget
+        """
         # Command filtering: checking beginning of command
         if not (command.startswith("route") or command.startswith("ip route")):
             dialog = QMessageBox(self)
@@ -595,7 +683,7 @@ class RouterDialog(BaseDialog):
                 return
 
         # If appropriate, command is sent and output is retrieved
-        output = self.router.net_controller.updateRoutingTable(self.router, command)
+        output = self.router.net_controller.updateNetNodeRoutingTable(self.router, command)
         if output is not None:
             dialog = QMessageBox(self)
             dialog.setIcon(QMessageBox.Warning)
@@ -606,14 +694,17 @@ class RouterDialog(BaseDialog):
             dialog.setDetailedText(str(output))
             dialog.exec()
         else:
-            route_list = self.router.net_controller.getRoutingTable(self.router)
+            route_list = self.router.net_controller.getNetNodeRoutingTable(self.router)
             self.updateRoutingTableLayout(widget, route_list)
 
     def updateRoutingTableLayout(self, route_widget, route_list):
-        """This function is in charge of modifying the dynamic widget and update it."""
-        if not isinstance(route_widget, QWidget):
-            return
+        """Modifies the dynamic widget updating the host's routing list
 
+        :param route_widget: widget in charge of displaying the routing table
+        :type route_widget: QWidget
+        :param route_list: dictionary with a tabulated routing table information
+        :type route_list: dict
+        """
         # Dynamic widget's layout emptying
         route_layout = route_widget.layout()
         if route_layout is not None:
@@ -639,12 +730,19 @@ class RouterDialog(BaseDialog):
                 route_layout.addWidget(del_button, index + 1, 6)
 
 
-# MiniGUI graphical classes
+# MiniGUI scene-related classes
 
 class TagGUI(QGraphicsTextItem):
     """Base class for scene tags (name, interfaces, IP address)"""
     def __init__(self, text=None, parent=None):
+        """
+        :param text: text to be introduced in tag
+        :type text: str
+        :param parent: element in charge of tag
+        """
         super(TagGUI, self).__init__(text, parent)
+
+        # Text font change
         font = QFont()
         font.setBold(True)
         self.setFont(font)
@@ -653,11 +751,16 @@ class TagGUI(QGraphicsTextItem):
 class EthTagGUI(TagGUI):
     """Extended class for node's interface name tags"""
     def __init__(self, text=None, parent=None):
+        """
+        :param text: text to be introduced in tag
+        :type text: str
+        :param parent: element in charge of tag
+        """
         super(EthTagGUI, self).__init__(text, parent)
         self.updateColor()
 
     def updateColor(self):
-        """This function changes the text color if app theme is changed"""
+        """Changes the text color if app theme is changed"""
         if APP_THEME == "light":
             self.setDefaultTextColor(Qt.darkCyan)
         elif APP_THEME == "dark":
@@ -667,11 +770,16 @@ class EthTagGUI(TagGUI):
 class IpTagGUI(TagGUI):
     """Extended class for interface's IP address tags"""
     def __init__(self, text=None, parent=None):
+        """
+        :param text: text to be introduced in tag
+        :type text: str
+        :param parent: element in charge of tag
+        """
         super(IpTagGUI, self).__init__(text, parent)
         self.updateColor()
 
     def updateColor(self):
-        """This function changes the text color if app theme is changed"""
+        """Changes the text color if app theme is changed"""
         if APP_THEME == "light":
             self.setDefaultTextColor(Qt.darkBlue)
         elif APP_THEME == "dark":
@@ -681,11 +789,16 @@ class IpTagGUI(TagGUI):
 class NameTagGUI(TagGUI):
     """Extended class for node's name tags"""
     def __init__(self, text=None, parent=None):
+        """
+        :param text: text to be introduced in tag
+        :type text: str
+        :param parent: element in charge of tag
+        """
         super(NameTagGUI, self).__init__(text, parent)
         self.updateColor()
 
     def updateColor(self):
-        """This function changes the text color if app theme is changed"""
+        """Changes the text color if app theme is changed"""
         if APP_THEME == "light":
             self.setDefaultTextColor(Qt.black)
         elif APP_THEME == "dark":
@@ -693,8 +806,24 @@ class NameTagGUI(TagGUI):
 
 
 class NodeGUI(QGraphicsPixmapItem):
-    """"Class for node elements"""
+    """Represents a node (host, switch or router) of SceneGUI class"""
     def __init__(self, x, y, node_type, node_name, properties=None, new_node=False, net_ctrl=None):
+        """
+        :param x: horizontal position of node
+        :type x: float
+        :param y: vertical position of node
+        :type y: float
+        :param node_type: type of the new node
+        :type node_type: str
+        :param node_name: name of the new node
+        :type node_name: str
+        :param properties: properties of the node in previous sessions (optional)
+        :type properties: dict
+        :param new_node: determines if the node is created in this session or not
+        :type new_node: bool
+        :param net_ctrl: pointer to MiniGUI class (optional)
+        :type net_ctrl: MiniGUI
+        """
         super(NodeGUI, self).__init__()
 
         # Pointer to main program
@@ -715,7 +844,17 @@ class NodeGUI(QGraphicsPixmapItem):
         self.setNodeAttributes(x, y, properties, new_node)
 
     def setNodeAttributes(self, x, y, properties=None, new_node=False):
-        """This function defines all the properties of the node"""
+        """Defines all the internal properties of the node
+
+        :param x: horizontal position of node
+        :type x: float
+        :param y: vertical position of node
+        :type y: float
+        :param properties: properties of the node in previous sessions (optional)
+        :type properties: dict
+        :param new_node: determines if the node is created in this session or not
+        :type new_node: bool
+        """
         # Acquisition of images
         images = imagesMiniGUI()
 
@@ -754,10 +893,17 @@ class NodeGUI(QGraphicsPixmapItem):
     # Auxiliary functions
 
     def addNewLink(self, name):
-        """Add a new link to the node and creating a new interface for it"""
+        """Adds a new link to the node and creates a new interface for it
+
+        :param name: new link's name
+        :type name: str
+        """
         if name not in self.links:
+            # Creating a new interface name and assignation to link
             new_intf = self.assignIntfName()
             self.links[name] = new_intf
+
+            # Creation of interface properties
             if self.node_type != "Switch" and len(self.links) == 1:
                 self.properties["eth_intfs"][new_intf] = (str(self.properties["IP"]) + "/" +
                                                           str(self.properties["PrefixLen"]))
@@ -769,7 +915,11 @@ class NodeGUI(QGraphicsPixmapItem):
             return self.links[name]
 
     def deleteLink(self, name):
-        """Deletes a link and everything related to it (properties & scene tags)"""
+        """Deletes a link and everything related to it (properties & scene tags)
+
+        :param name: to-be-deleted link's name
+        :type name: str
+        """
         if name in self.links:
             intf = self.links.pop(name)
             self.properties["eth_intfs"].pop(intf)
@@ -777,16 +927,24 @@ class NodeGUI(QGraphicsPixmapItem):
             if intf in self.scene_tags["IP"]:
                 self.scene_tags["IP"].pop(intf)
 
-    def searchLinkByIntf(self, intf):
-        """Searches a link through its associated interface"""
+    def searchLinkByIntf(self, intf_name):
+        """Searches a link through its associated interface
+
+        :param intf_name: interface's name
+        :type intf_name: str
+        """
         for link in self.links:
-            if intf == self.links[link]:
+            if intf_name == self.links[link]:
                 return link
 
         return None
 
     def assignIntfName(self):
-        """This function checks all interfaces and creates a new name for the last interface"""
+        """Checks all interfaces and assigns a new name for the new interface
+
+        :returns name for the new interface
+        :rtype str
+        """
         if not self.properties["eth_intfs"]:
             return self.node_name + "-eth0"
 
@@ -803,13 +961,22 @@ class NodeGUI(QGraphicsPixmapItem):
         return intf_name
 
     def changeSceneNameTag(self, new_name):
-        """Updates the name tag with its new content and changes its horizontal position in scene"""
+        """
+        Updates the name tag with its new content and changes
+        its horizontal position in scene
+
+        :param new_name: new text for the name tag
+        :type new_name: str
+        """
         tag = self.scene_tags["name"]
         tag.setPlainText(str(new_name))
         tag.setX((self.boundingRect().width() - tag.boundingRect().width()) / 2)
 
     def changeSceneIpTags(self):
-        """Updates the IP tag with its new content and changes its horizontal position in scene"""
+        """
+        Updates the IP tag with its new content and changes
+        its horizontal position in scene
+        """
         if "IP" not in self.scene_tags:
             return
 
@@ -825,7 +992,10 @@ class NodeGUI(QGraphicsPixmapItem):
                     scene.addSceneLinkIpTags(self, eth, eth_tag)
 
     def nodePropertiesDialog(self):
-        """Allows user to change the node's parameters or access to net information"""
+        """
+        Allows user to change the node's parameters or access
+        to net information
+        """
         # Creating dialog according to node type
         if self.node_type == "Host":
             dialog = HostDialog(self)
@@ -842,7 +1012,7 @@ class NodeGUI(QGraphicsPixmapItem):
             # Node name
             new_name = dialog.results["node_name"].text()
             if isinstance(scene, SceneGUI) and new_name != self.node_name and scene.isFeasibleName(new_name):
-                scene.sceneNodes[new_name] = scene.sceneNodes.pop(self.node_name)
+                scene.scene_nodes[new_name] = scene.scene_nodes.pop(self.node_name)
                 self.node_name = new_name
                 self.changeSceneNameTag(new_name)
 
@@ -861,9 +1031,9 @@ class NodeGUI(QGraphicsPixmapItem):
             if "eth_intfs_state" in dialog.results:
                 for eth in dialog.results["eth_intfs_state"]:
                     new_eth_state = dialog.results["eth_intfs_state"][eth].isChecked()
-                    scene.sceneLinks[self.searchLinkByIntf(eth)].setLinkState(new_eth_state)
+                    scene.scene_links[self.searchLinkByIntf(eth)].setLinkState(new_eth_state)
                     if scene.net_running:
-                        self.net_controller.updateNetLink(scene.sceneLinks[self.searchLinkByIntf(eth)])
+                        self.net_controller.updateNetLinkStatus(scene.scene_links[self.searchLinkByIntf(eth)])
 
             # Changes are added to scene
             self.changeSceneIpTags()
@@ -871,10 +1041,14 @@ class NodeGUI(QGraphicsPixmapItem):
 
             # If needed, update Mininet nodes with new information
             if scene.net_running:
-                self.net_controller.updateNetNode(self)
+                self.net_controller.updateNetNodeInterfaces(self)
 
     def changePixmapColor(self, mode=None):
-        """Changes the node's scene icon according to the selected tool"""
+        """Changes the node's scene icon according to the selected tool
+
+        :param mode: name of operation being executed (select or delete)
+        :type mode: str
+        """
         # Initial variables
         painter = QPainter()
         image = QImage(self.icon).scaled(self.width, self.height, Qt.KeepAspectRatio)
@@ -899,7 +1073,7 @@ class NodeGUI(QGraphicsPixmapItem):
         self.setPixmap(QPixmap(image))
 
     def updateIcon(self):
-        """This function updates the node's pixmap"""
+        """Updates the node's pixmap"""
         images = imagesMiniGUI()
         self.icon = images[self.node_type]
         self.image = QPixmap(self.icon).scaled(self.width, self.height, Qt.KeepAspectRatio)
@@ -908,7 +1082,13 @@ class NodeGUI(QGraphicsPixmapItem):
     # Event handlers
 
     def itemChange(self, change, value):
-        """This function activates when element is moved in the scene"""
+        """It is called when element is moved in the scene
+
+        :param change: what kind of change the node has done
+        :type change: QGraphicsItem.GraphicsItemChange
+        :param value: value of the change
+        :type value: QVariant
+        """
         if change == QGraphicsItem.ItemScenePositionHasChanged:
             scene = self.scene()
             if scene is not None and isinstance(scene, SceneGUI):
@@ -917,7 +1097,12 @@ class NodeGUI(QGraphicsPixmapItem):
         return QGraphicsItem.itemChange(self, change, value)
 
     def contextMenuEvent(self, event):
-        """Context menu for nodes (hosts & switches)"""
+        """It is called when user clicks with the mouse right button on the node
+
+        :param event: application's event
+        :type event: QGraphicsSceneContextMenuEvent
+        """
+        # Initialization
         context_menu = QMenu()
         scene = self.scene()
 
@@ -936,13 +1121,13 @@ class NodeGUI(QGraphicsPixmapItem):
             # XTerm
             xterm_act = QAction("XTerm", self.net_controller)
             xterm_act.setStatusTip("Open " + str(self.node_type).lower() + " XTerm")
-            xterm_act.triggered.connect(lambda: self.net_controller.xterm(name=self.node_name))
+            xterm_act.triggered.connect(lambda: self.net_controller.xterm(node=self))
             context_menu.addAction(xterm_act)
             if not scene.net_running:
                 xterm_act.setEnabled(False)
 
         elif self.node_type == "Switch":
-            # Switch MAC
+            # Switch MAC addresses list
             routing_act = QAction("See MAC addresses", self.net_controller)
             routing_act.setStatusTip("See switch learned MAC addresses")
             routing_act.triggered.connect(lambda: self.nodePropertiesDialog())
@@ -953,19 +1138,28 @@ class NodeGUI(QGraphicsPixmapItem):
         action = context_menu.exec(event.screenPos())
 
     def focusInEvent(self, event):
-        """
-        This function initiates when the node gains focus from the scene. To get the attention from the user, the
-        program change the node color to highlight it
+        """It is called when link gains focus from the scene
+
+        :param event: application's event
+        :type event: QFocusEvent
         """
         self.setPixmap(self.image)
         self.changePixmapColor()
 
     def focusOutEvent(self, event):
-        """This function is the contrary of the previous one. It is used to retrieve the original icon"""
+        """It is called when link loses focus from the scene
+
+        :param event: application's event
+        :type event: QFocusEvent
+        """
         self.setPixmap(self.image)
 
     def hoverEnterEvent(self, event):
-        """This function is activated when the mouse enters in the element space"""
+        """It is called when pointer enters the link's space
+
+        :param event: application's event
+        :type event: QGraphicsSceneHoverEvent
+        """
         # Scene selected tool changes mask color
         scene_tool = None
         node_scene = self.scene()
@@ -980,7 +1174,11 @@ class NodeGUI(QGraphicsPixmapItem):
             self.changePixmapColor()
 
     def hoverLeaveEvent(self, event):
-        """This function is activated when the mouse leaves in the element space"""
+        """It is called when pointer leaves the link's space
+
+        :param event: application's event
+        :type event: QGraphicsSceneHoverEvent
+        """
         # Scene selected tool changes mask color
         scene_tool = None
         node_scene = self.scene()
@@ -996,8 +1194,20 @@ class NodeGUI(QGraphicsPixmapItem):
 
 
 class LinkGUI(QGraphicsLineItem):
-    """Class for links of node elements"""
+    """Represents the link that connects two nodes of SceneGUI class"""
     def __init__(self, x1, y1, x2, y2, net_ctrl=None):
+        """
+        :param x1: horizontal position of first link's end
+        :type x1: float
+        :param y1: vertical position of first link's end
+        :type y1: float
+        :param x2: horizontal position of second link's end
+        :type x2: float
+        :param y2: vertical position of second link's end
+        :type y2: float
+        :param net_ctrl: pointer to MiniGUI class (optional)
+        :type net_ctrl: MiniGUI
+        """
         super(LinkGUI, self).__init__(x1, y1, x2, y2)
 
         # Pointer to main program
@@ -1016,7 +1226,7 @@ class LinkGUI(QGraphicsLineItem):
         self.setLinkAttributes()
 
     def setLinkAttributes(self):
-        """This function sets the link's initial properties"""
+        """Sets up the link's internal properties"""
         # Set color and width of the link
         self.pen.setWidth(2)
         if APP_THEME == "light":
@@ -1034,12 +1244,23 @@ class LinkGUI(QGraphicsLineItem):
     # Auxiliary functions
 
     def isLinkUp(self):
-        """This function returns a boolean with the link state: if up, true; if down, false"""
+        """Returns a boolean with the link state
+
+        :returns the state of the link
+        :rtype bool
+        """
         return self.is_up
 
     def setLinkState(self, is_up=True):
-        """This function modifies the line style according to the link's state"""
+        """Sets up the link's state and modifies its style accordingly
+
+        :param is_up: new link's state
+        :type is_up: bool
+        """
+        # Setting up new link's state
         self.is_up = is_up
+
+        # Modification of link's style
         if is_up:
             self.pen.setStyle(Qt.SolidLine)
         else:
@@ -1048,12 +1269,18 @@ class LinkGUI(QGraphicsLineItem):
         self.changeLineColor()
 
     def updateEndPoint(self, x2, y2):
-        """This function changes the position of one of the ends of the line"""
+        """Changes the position of one of the ends of the line
+
+        :param x2: new horizontal position of link's end
+        :type x2: float
+        :param y2: new vertical position of link's end
+        :type y2: float
+        """
         line = self.line()
         self.setLine(line.x1(), line.y1(), x2, y2)
 
     def deleteSceneTags(self):
-        """This function deletes all the scene tags related to this link"""
+        """Deletes all the scene tags related to this link"""
         scene = self.scene()
         if scene is not None and isinstance(scene, SceneGUI):
             tags = self.scene_tags
@@ -1061,7 +1288,10 @@ class LinkGUI(QGraphicsLineItem):
                 scene.removeItem(tags[tag])
 
     def changeLineColor(self):
-        """This function changes the line color attending the link's state and if the scene is focused on the item"""
+        """
+        Changes the line color attending the link's state and if
+        the scene is focused on the item
+        """
         if self.is_up and self.hasFocus():
             self.pen.setColor(Qt.darkBlue)
         elif self.is_up and not self.hasFocus() and APP_THEME == "light":
@@ -1078,15 +1308,27 @@ class LinkGUI(QGraphicsLineItem):
     # Event handlers
 
     def focusInEvent(self, event):
-        """This function activates when link gains focus from the scene"""
+        """It is called when link gains focus from the scene
+
+        :param event: application's event
+        :type event: QFocusEvent
+        """
         self.changeLineColor()
 
     def focusOutEvent(self, event):
-        """This function activates when link loses focus from the scene"""
+        """It is called when link loses focus from the scene
+
+        :param event: application's event
+        :type event: QFocusEvent
+        """
         self.changeLineColor()
 
     def hoverEnterEvent(self, event):
-        """This function activates when link is user's pointer enters the element"""
+        """It is called when pointer enters the link's space
+
+        :param event: application's event
+        :type event: QGraphicsSceneHoverEvent
+        """
         scene = self.scene()
         if self.is_up and scene.current_tool != "Delete":
             self.pen.setColor(Qt.darkBlue)
@@ -1096,44 +1338,59 @@ class LinkGUI(QGraphicsLineItem):
         self.setPen(self.pen)
 
     def hoverLeaveEvent(self, event):
-        """This function activates when link is user's pointer leaves the element"""
+        """It is called when pointer leaves the link's space
+
+        :param event: application's event
+        :type event: QGraphicsSceneHoverEvent
+        """
         self.changeLineColor()
 
 
 class SceneGUI(QGraphicsScene):
+    """It displays the topology network created by the user"""
     def __init__(self, net_ctrl=None):
+        """
+        :param net_ctrl: reference to MiniGUI main class
+        :type: MiniGUI
+        """
         super(SceneGUI, self).__init__()
 
         # Pointer to main program
         self.net_controller = net_ctrl
 
-        # Initial variables
-        self.scene_modified = False
-        self.current_tool = None
+        # Internal variables
         self.net_running = False
+        self.current_tool = None
+        self.scene_modified = False
 
         # Node & Link dictionaries
-        self.sceneNodes = {}
-        self.sceneLinks = {}
+        self.scene_nodes = {}
+        self.scene_links = {}
 
-        # Model initialization
-        self.item_letter = {"Host": "h", "Switch": "s", "Router": "r", "Link": "l"}
+        # Item counting initialization
         self.item_count = {"Host": 0, "Switch": 0, "Router": 0, "Link": 0}
+        self.item_letter = {"Host": "h", "Switch": "s", "Router": "r", "Link": "l"}
 
         # Event handling initialization
         self.new_link = None
         self.link_orig_node = None
 
-        # IP address variables
+        # IP address related variables
         self.default_ip_last = 1
         self.default_ip_base = "10.0.0."
         self.default_ip = self.default_ip_base + str(self.default_ip_last)
 
-    # Scene functions
+    # Scene-related functions
 
     @staticmethod
     def addSceneNodeNameTag(node, name):
-        """This function creates a name tag and links it to the node"""
+        """Creates a name tag and links it to the node
+
+        :param node: reference to node object
+        :type node: NodeGUI
+        :param name: node name assigned to tag
+        :type name: str
+        """
         name_tag = NameTagGUI(name, node)
         node.scene_tags["name"] = name_tag
         new_pos_x = (node.boundingRect().width() - name_tag.boundingRect().width()) / 2
@@ -1141,8 +1398,22 @@ class SceneGUI(QGraphicsScene):
         name_tag.setPos(new_pos_x, new_pos_y)
 
     def addSceneNode(self, x, y, node_type, name=None, properties=None):
-        """Function to add a node element to the scene"""
-        # Properties checking (in case the element is loaded up from previous projects)
+        """Adds a new node to the scene
+
+        :param x: node's horizontal position in scene
+        :type x: float
+        :param y: node's vertical position in scene
+        :type y: float
+        :param node_type: node's type
+        :type node_type: str
+        :param name: node's name (optional)
+        :type name: str
+        :param properties: node's properties
+        :type properties: dict
+        :returns node object
+        :rtype NodeGUI
+        """
+        # Property checking (in case the node is loaded up from previous project)
         if properties is None and node_type != "Switch":
             node_properties = {"IP": self.default_ip, "PrefixLen": 8}
             self.default_ip_last = self.default_ip_last + 1
@@ -1165,7 +1436,7 @@ class SceneGUI(QGraphicsScene):
 
         # Creation of node and saving into scene's node list
         node = NodeGUI(x, y, node_type, node_name, node_properties, node_new, self.net_controller)
-        self.sceneNodes[node_name] = node
+        self.scene_nodes[node_name] = node
 
         # Addition of node to scene, gaining focus and modifying the scene
         self.addSceneNodeNameTag(node, node_name)
@@ -1179,13 +1450,27 @@ class SceneGUI(QGraphicsScene):
         return node
 
     def addSceneLink(self, x, y):
-        """Function to inicializate a new link on the scene"""
+        """Initiates the process of creation of a new link in the scene
+
+        :param x: link's first end horizontal position in scene
+        :type x: float
+        :param y: node's first end vertical position in scene
+        :type y: float
+        """
         self.new_link = LinkGUI(x, y, x, y, net_ctrl=self.net_controller)
         self.addItem(self.new_link)
 
     @staticmethod
     def checkNodeIpTag(node, eth):
-        """Returns boolean depending on if IP tag must be created or not"""
+        """Returns boolean depending on if IP tag must be created or not
+
+        :param node: reference o node object
+        :type node: NodeGUI
+        :param eth: interface name
+        :type eth: str
+        :returns evaluation if an IP tag is needed or not
+        :rtype bool
+        """
         if node.node_type != "Switch":
             node_eths = node.properties["eth_intfs"]
             if eth in node_eths and node_eths[eth] != "":
@@ -1195,7 +1480,15 @@ class SceneGUI(QGraphicsScene):
 
     @staticmethod
     def addSceneLinkIpTags(node, eth, eth_tag):
-        """Function to add IP tags to scene"""
+        """Adds a IP tag for a node to the scene
+
+        :param node: reference to node object
+        :type node: NodeGUI
+        :param eth: interface related to IP address tag
+        :type eth: str
+        :param eth_tag: interface tag
+        :type eth_tag: EthTagGUI
+        """
         # Getting IP address from interface
         node_ip_dict = node.properties["eth_intfs"]
         tag_text = node_ip_dict[eth].split("/")[0]
@@ -1210,7 +1503,17 @@ class SceneGUI(QGraphicsScene):
         ip_tag.setPos(ip_tag_x_pos, ip_tag_y_pos)
 
     def addSceneLinkEthTags(self, orig_node, orig_eth, dest_node, dest_eth):
-        """This function creates and adds the Ethernet interface tags to scene"""
+        """Creates and adds the Ethernet interface (& IP) tags to scene
+
+        :param orig_node: reference to first node object
+        :type orig_node: NodeGUI
+        :param orig_eth: first node interface name
+        :type orig_eth: str
+        :param dest_node: reference to second node object
+        :type dest_node: NodeGUI
+        :param dest_eth: second node interface name
+        :type dest_eth: str
+        """
         # Creating the interface tags
         orig_tag = EthTagGUI(orig_eth, None)
         dest_tag = EthTagGUI(dest_eth, None)
@@ -1230,17 +1533,23 @@ class SceneGUI(QGraphicsScene):
         if self.checkNodeIpTag(dest_node, dest_eth):
             self.addSceneLinkIpTags(dest_node, dest_eth, dest_tag)
 
+        # Update of newest tags' position within the scene
         self.updateSceneLinkTags(self.new_link, orig_node, dest_node)
 
     def finishSceneLink(self, name=None):
-        """Last function to be called when a link is set up between two nodes"""
+        """Finishes the creation process of a link between two nodes
+
+        :param name: link's name (optional)
+        :type name: str
+        """
+        # Retrieving information from link and selected nodes
         line = self.new_link.line()
         orig_node = self.itemAt(line.p1(), QTransform())
         dest_node = self.itemAt(line.p2(), QTransform())
         if not isinstance(orig_node, NodeGUI) or not isinstance(dest_node, NodeGUI):
             return
 
-        # Naming
+        # Link's naming (if needed)
         if name is None:
             while True:
                 new_name = self.item_letter["Link"] + str(self.item_count["Link"])
@@ -1254,7 +1563,7 @@ class SceneGUI(QGraphicsScene):
         # Updating of link information in both elements and link
         self.new_link.link_name = new_name
         self.new_link.nodes = [orig_node.node_name, dest_node.node_name]
-        self.sceneLinks[new_name] = self.new_link
+        self.scene_links[new_name] = self.new_link
 
         # Adding new link to node and new interface tags to scene
         orig_eth = orig_node.addNewLink(new_name)
@@ -1268,7 +1577,15 @@ class SceneGUI(QGraphicsScene):
 
     @staticmethod
     def updateSceneLinkTags(link, orig_node, dest_node):
-        """This function is in charge of moving and locating the interface and IP scene tags correctly"""
+        """Moves and allocates the interface and IP scene tags correctly
+
+        :param link: reference to the moved link
+        :type link: LinkGUI
+        :param orig_node: reference to first node object
+        :type orig_node: NodeGUI
+        :param dest_node: reference to second node object
+        :type dest_node: NodeGUI
+        """
         # New positions of nodes (and line)
         line = link.line()
         orig_pos_x = line.x1()
@@ -1276,6 +1593,7 @@ class SceneGUI(QGraphicsScene):
         dest_pos_x = line.x2()
         dest_pos_y = line.y2()
 
+        # Calculating absolute horizontal and vertical distance
         long_x = abs(orig_pos_x - dest_pos_x)
         long_y = abs(orig_pos_y - dest_pos_y)
 
@@ -1324,41 +1642,49 @@ class SceneGUI(QGraphicsScene):
                                  dest_pos_y - (long_y / 4) - dest_tag_offset_y - ip_dest_tag_offset)
 
     def updateSceneLinks(self, node):
-        """Function to update links position if one of the nodes moves"""
+        """Updates links position if one of the nodes moves
+
+        :param node: reference to node object
+        :type node: NodeGUI
+        """
         # Initial variables
         node_links = node.links
         node_name = node.node_name
         node_pos = node.scenePos()
 
+        # Updating scene variable
+        self.scene_modified = True
+
         # If there is no link related to the node, functions returns
         if not node_links:
-            self.scene_modified = True
             return
 
         # If there are links related to the node, each one of them is updated
         for link in node_links:
-            for linked_node_name in self.sceneLinks[link].nodes:
+            for linked_node_name in self.scene_links[link].nodes:
                 if linked_node_name != node_name:
-                    dest_node = self.sceneNodes[linked_node_name]
+                    dest_node = self.scene_nodes[linked_node_name]
                     dest_node_pos = dest_node.scenePos()
                     offset_node = node.boundingRect().center()
                     offset_dest_node = dest_node.boundingRect().center()
-                    self.sceneLinks[link].setLine(node_pos.x() + offset_node.x(),
-                                                  node_pos.y() + offset_node.y(),
-                                                  dest_node_pos.x() + offset_dest_node.x(),
-                                                  dest_node_pos.y() + offset_dest_node.y())
-                    self.updateSceneLinkTags(self.sceneLinks[link], node, dest_node)
-
-        self.scene_modified = True
+                    self.scene_links[link].setLine(node_pos.x() + offset_node.x(),
+                                                   node_pos.y() + offset_node.y(),
+                                                   dest_node_pos.x() + offset_dest_node.x(),
+                                                   dest_node_pos.y() + offset_dest_node.y())
+                    self.updateSceneLinkTags(self.scene_links[link], node, dest_node)
 
     def removeSceneItem(self, item):
-        """Deletes an node/link from the scene and all links related to it"""
+        """Deletes a node/link from the scene and all links related to it
+
+        :param item: item to be deleted
+        :type item: QGraphicsItem
+        """
         # Initial variable in order to remove links later
         links_to_remove = []
 
         # If item to delete is a node, extract its links and delete the item
         if isinstance(item, NodeGUI):
-            self.sceneNodes.pop(item.node_name)
+            self.scene_nodes.pop(item.node_name)
             self.removeItem(item)
             for link in item.links:
                 links_to_remove.append(link)
@@ -1369,17 +1695,21 @@ class SceneGUI(QGraphicsScene):
 
         # Update of all elements related to the to-be-deleted item
         for link in links_to_remove:
-            self.sceneLinks[link].deleteSceneTags()
-            self.removeItem(self.sceneLinks[link])
-            self.sceneLinks.pop(link)
-            for node in self.sceneNodes:
-                if link in self.sceneNodes[node].links:
-                    self.sceneNodes[node].deleteLink(link)
+            self.scene_links[link].deleteSceneTags()
+            self.removeItem(self.scene_links[link])
+            self.scene_links.pop(link)
+            for node in self.scene_nodes:
+                if link in self.scene_nodes[node].links:
+                    self.scene_nodes[node].deleteLink(link)
 
         self.scene_modified = True
 
     def loadScene(self, data):
-        """Function called when loading a scene from an external file"""
+        """Loads the network topology from external file
+
+        :param data: structured network topology data
+        :type data: dict
+        """
         # Addition of nodes to the scene
         if "nodes" in data:
             nodes_list = data["nodes"]
@@ -1396,7 +1726,8 @@ class SceneGUI(QGraphicsScene):
                     dialog.setIcon(QMessageBox.Warning)
                     dialog.setTextFormat(Qt.RichText)
                     dialog.setText("<b>Mininet topology file corrupted</b>")
-                    dialog.setInformativeText("Project nodes data is corrupted. Please, verify JSON format is correct.")
+                    dialog.setInformativeText("Project nodes data is corrupted."
+                                              "Please, verify JSON format is correct.")
                     dialog.exec()
                     return
                 else:
@@ -1418,13 +1749,14 @@ class SceneGUI(QGraphicsScene):
                     dialog.setIcon(QMessageBox.Warning)
                     dialog.setTextFormat(Qt.RichText)
                     dialog.setText("<b>Mininet topology file corrupted</b>")
-                    dialog.setInformativeText("Project links data is corrupted. Please, verify JSON format is correct.")
+                    dialog.setInformativeText("Project links data is corrupted."
+                                              "Please, verify JSON format is correct.")
                     dialog.exec()
                     return
                 else:
                     scene_element = []
                     for node_name in link_nodes:
-                        scene_element.append(self.sceneNodes[node_name])
+                        scene_element.append(self.scene_nodes[node_name])
 
                 # Associating the links to its correspondent nodes
                 orig_coor = scene_element[0].scenePos() + scene_element[0].boundingRect().center()
@@ -1437,30 +1769,34 @@ class SceneGUI(QGraphicsScene):
         self.scene_modified = False
 
     def saveScene(self):
-        """Function called to save the state of the current project"""
+        """Saves the current network topology of the project
+
+        :returns: structured network topology data
+        :rtype: dict
+        """
         # Initial variables
         file_dictionary = {}
         nodes_saved = []
         links_saved = []
 
         # Saving nodes
-        for item in self.sceneNodes:
+        for item in self.scene_nodes:
             node = {
-                "name": self.sceneNodes[item].node_name,
-                "type": self.sceneNodes[item].node_type,
-                "x_pos": self.sceneNodes[item].scenePos().x(),
-                "y_pos": self.sceneNodes[item].scenePos().y(),
-                "links": self.sceneNodes[item].links,
-                "properties": self.sceneNodes[item].properties
+                "name": self.scene_nodes[item].node_name,
+                "type": self.scene_nodes[item].node_type,
+                "x_pos": self.scene_nodes[item].scenePos().x(),
+                "y_pos": self.scene_nodes[item].scenePos().y(),
+                "links": self.scene_nodes[item].links,
+                "properties": self.scene_nodes[item].properties
             }
             nodes_saved.append(node)
 
         # Saving links
-        for item in self.sceneLinks:
+        for item in self.scene_links:
             link = {
-                "name": self.sceneLinks[item].link_name,
-                "nodes": self.sceneLinks[item].nodes,
-                "state": self.sceneLinks[item].isLinkUp()
+                "name": self.scene_links[item].link_name,
+                "nodes": self.scene_links[item].nodes,
+                "state": self.scene_links[item].isLinkUp()
             }
             links_saved.append(link)
 
@@ -1474,7 +1810,7 @@ class SceneGUI(QGraphicsScene):
     # Auxiliary functions
 
     def isFeasibleName(self, name):
-        """This functions checks if a given name is already taken or not"""
+        """Checks if a given name is already taken or not"""
         if len(name) == 0:
             return False
 
@@ -1486,42 +1822,59 @@ class SceneGUI(QGraphicsScene):
 
         return True
 
-    def checkFeasibleLink(self, dest_node):
+    def checkFeasibleLink(self, dest_item):
+        """Checks if the connection between two items is possible
+
+        :param dest_item: item selected at the end of the linking process
+        :type dest_item: QGraphicsItem
+        :returns feasibility of the link
+        :rtype bool
         """
-        This function checks if a connection is possible between two nodes or wherever the user release
-        the mouse button
-        """
-        if dest_node == self.link_orig_node or dest_node == self.new_link:
+        # Checking if the second item is the link itself or the first node
+        if dest_item == self.link_orig_node or dest_item == self.new_link:
             return False
-
-        if isinstance(self.link_orig_node, NodeGUI) and isinstance(dest_node, NodeGUI):
-            if self.link_orig_node.node_type == "Host" and dest_node.node_type == "Host":
-                return False
-
-        orig_node_links = self.link_orig_node.links
-        dest_node_links = dest_node.links
-        for orig_link in orig_node_links:
-            for dest_link in dest_node_links:
-                if dest_link == orig_link:
+        # Checking if the link between the two items is allowed
+        elif (isinstance(self.link_orig_node, NodeGUI) and
+                isinstance(dest_item, NodeGUI) and
+                self.link_orig_node.node_type == "Host" and
+                dest_item.node_type == "Host"):
+            return False
+        else:
+            # Checking if there is already a link between these two nodes
+            orig_node_links = self.link_orig_node.links
+            for orig_link in orig_node_links:
+                if orig_link in dest_item.links:
                     return False
 
         return True
 
     def selectSceneItem(self, item):
-        """Function to change the focus and the selection of the scene to the element that the user has clicked on"""
+        """
+        Changes the focus and the selection of the scene to the element
+        that the user has clicked on
+
+        :param item: scene element, selected by the user
+        :type item: QGraphicsItem
+        """
         if not isinstance(item, (NodeGUI, LinkGUI)):
             return
 
+        # Clearing scene's attention spot from previous item (if needed)
         self.clearSelection()
         self.clearFocus()
 
+        # Selecting and focusing on item
         item.setSelected(True)
         item.setFocus()
 
     # Event handlers
 
     def event(self, event):
-        """Auxiliary function used for applications changes such as palette"""
+        """It is called when there are application changes such as palette
+
+        :param event: application's event
+        :type event: QEvent
+        """
         if event.type() == QEvent.PaletteChange:
             for item in self.items():
                 if isinstance(item, (IpTagGUI, EthTagGUI, NameTagGUI)):
@@ -1534,7 +1887,11 @@ class SceneGUI(QGraphicsScene):
         return QGraphicsScene.event(self, event)
 
     def keyPressEvent(self, event):
-        """Function related to key-pressed events. Now used only for element deleting"""
+        """It is called when user presses keys in the keyboard
+
+        :param event: application's event
+        :type event: QKeyEvent
+        """
         # If Mininet is running, deleting is not available
         if self.net_running:
             return
@@ -1545,7 +1902,11 @@ class SceneGUI(QGraphicsScene):
                 self.removeSceneItem(item)
 
     def mousePressEvent(self, event):
-        """Handler for mouse press events: depending on the selected tool, different actions are taken"""
+        """It is called when user presses the mouse on the scene
+
+        :param event: application's event
+        :type event: QGraphicsSceneMouseEvent
+        """
         if self.new_link is not None:
             self.removeItem(self.new_link)
             self.link_orig_node = None
@@ -1573,13 +1934,21 @@ class SceneGUI(QGraphicsScene):
             self.selectSceneItem(self.focusItem())
 
     def mouseMoveEvent(self, event):
-        """Handler for mouse move events. Now only used when link tool is selected to move link along with mouse"""
+        """It is called when user moves the mouse over the scene
+
+        :param event: application's event
+        :type event: QGraphicsSceneMouseEvent
+        """
         super().mouseMoveEvent(event)
         if self.current_tool == "Link" and self.new_link is not None:
             self.new_link.updateEndPoint(event.scenePos().x(), event.scenePos().y())
 
     def mouseReleaseEvent(self, event):
-        """Handler for mouse release events. Only used to check if link has been correctly added to the scene"""
+        """It is called when user stops pressing the mouse on the scene
+
+        :param event: application's event
+        :type event: QGraphicsSceneMouseEvent
+        """
         super().mouseReleaseEvent(event)
         if self.current_tool == "Link" and self.new_link is not None:
             item = self.itemAt(event.scenePos(), QTransform())
@@ -1594,20 +1963,14 @@ class SceneGUI(QGraphicsScene):
                 self.new_link = None
 
 
-# Main window and scene container class
+# Application main class
 
 class MiniGUI(QMainWindow):
-    """Main class of the application. It holds all the structure along with the scene"""
+    """It holds all the application's structure: scene, tools, etc."""
     def __init__(self):
-        super(QMainWindow, self).__init__()
+        super(MiniGUI, self).__init__()
 
-        # File attribute (used for saving process)
-        self.file = None
-
-        # Preference attribute dictionary
-        self.app_prefs = {"Mode": "basic", "CLI": True, "ProjectPath": ""}
-
-        # Main window attributes settings
+        # Main window components
         self.menu_bar = QMenuBar()
         self.tool_bar = QToolBar()
         self.status_bar = QStatusBar()
@@ -1615,34 +1978,42 @@ class MiniGUI(QMainWindow):
         self.tool_buttons = QButtonGroup()
         self.net_indicators = {}
 
-        # Scene variables initialization
+        # Scene-related variables
         self.canvas = QGraphicsView()
         self.scene = SceneGUI(net_ctrl=self)
 
-        # Mininet variables
+        # Mininet-related variables
         self.net = None
         self.thread_cli = None
         self.thread_updater = None
 
+        # Auxiliary variables
+        self.project_path = None
+        self.app_prefs = {"LastProjectPath": "", "Mode": "basic", "CLI": True}
+
         # Modification of internal properties
         self.setContextMenuPolicy(Qt.NoContextMenu)
 
-        # Retrieving the user preferences saved in other sessions
+        # User preferences retrieval
         self.setPreferencesGUI()
 
-        # Interface personalization setting
+        # Main window initialization
         self.setMainWindowGUI()
         self.setStatusBarGUI()
         self.setMenuBarGUI()
         self.setToolBarGUI()
 
-    # Application initialization functions
+    # Main window initialization functions
 
     def setPreferencesGUI(self):
-        """Checking and retrieving of user preferences from previous sessions"""
+        """
+        Checks and retrieves the user preferences from previous
+        sessions through external configuration files
+        """
+        # Retrieval of external file
         settings = QSettings('MiniGUI', 'settings')
 
-        # Application theme
+        # Application theme assignation
         global APP_THEME
         APP_THEME = settings.value('AppTheme')
         if APP_THEME is None:
@@ -1650,14 +2021,14 @@ class MiniGUI(QMainWindow):
         elif APP_THEME == "dark":
             changeAppPalette()
 
-        # Application mode (basic or advanced)
+        # Application mode assignation
         app_mode = settings.value('AppMode')
-        if app_mode != "basic" and app_mode != "advanced":
+        if app_mode not in ["basic", "advanced"]:
             self.app_prefs["Mode"] = "basic"
         else:
             self.app_prefs["Mode"] = app_mode
 
-        # Use of CLI or not
+        # Use of CLI in Mininet executions
         app_cli = settings.value('AppCLI')
         if app_cli == "True":
             self.app_prefs["CLI"] = True
@@ -1665,35 +2036,38 @@ class MiniGUI(QMainWindow):
             self.app_prefs["CLI"] = False
 
         # Directory of last opened project
-        self.app_prefs["ProjectPath"] = settings.value("ProjectPath")
+        self.app_prefs["LastProjectPath"] = settings.value("ProjectPath")
 
     def setMainWindowGUI(self):
-        """Main window setting"""
-        # Setting window's main properties
+        """
+        Sets the internal values of the main window base class:
+        geometry, size, title, font and central widget
+        """
+        # Geometry, size and title assignation
         self.setMinimumSize(500, 300)
         self.setWindowTitle("MiniGUI")
         self.setGeometry(500, 200, 1000, 600)
 
-        # Relating QGraphicsScene to QGraphicsView
+        # Scene allocation within main window
         self.canvas.setScene(self.scene)
         self.setCentralWidget(self.canvas)
 
-        # Changing application's font
+        # Application's font modification
         font = app.font()
         font.setPixelSize(14)
         app.setFont(font)
 
     def setStatusBarGUI(self):
-        """Status bar setting"""
-        # Assignation
+        """Organises the main window's status bar"""
+        # Assignation of status bar to main window
         self.setStatusBar(self.status_bar)
 
-        # 1st label: net status with text
+        # Adding 1st permanent label: net status through text
         label_widget = QLabel("Mininet network is not active")
         self.status_bar.addPermanentWidget(label_widget)
         self.net_indicators["Text"] = label_widget
 
-        # 2nd label: net status with a coloured square
+        # Adding 2nd permanent label: net status through coloured square
         color_widget = QWidget()
         color_widget.setFixedWidth(20)
         color_widget.setStyleSheet("background-color: red")
@@ -1701,16 +2075,16 @@ class MiniGUI(QMainWindow):
         self.net_indicators["Color"] = color_widget
 
     def setMenuBarGUI(self):
-        """Main menu bar setting"""
+        """Organises the main window's menu bar"""
         # Assignation
         self.setMenuBar(self.menu_bar)
 
-        # Menu bar submenus initialization
+        # Submenus definition and addition to menu bar
         file_menu = self.menu_bar.addMenu("File")
         pref_menu = self.menu_bar.addMenu("Preferences")
         help_menu = self.menu_bar.addMenu("About")
 
-        # Menu actions
+        # Submenus options
         new_action = QAction("New", self)
         open_action = QAction("Open", self)
         save_action = QAction("Save", self)
@@ -1721,19 +2095,19 @@ class MiniGUI(QMainWindow):
         app_cli_action = QAction("CLI terminal", self)
         about_action = QAction("About MiniGUI", self)
 
-        # Action shortcuts
+        # Action keyboard shortcuts
         new_action.setShortcut("Ctrl+N")
         open_action.setShortcut("Ctrl+O")
         save_action.setShortcut("Ctrl+S")
         quit_action.setShortcut("Ctrl+Q")
         about_action.setShortcut("F1")
 
-        # Action attribute changes
+        # Action properties definition and update according to
+        # retrieved user preferences (if needed)
         app_theme_action.setCheckable(True)
         app_mode_action.setCheckable(True)
         app_cli_action.setCheckable(True)
 
-        # Update of 'checkable' buttons according to preferences
         if APP_THEME == "dark":
             app_theme_action.setChecked(True)
         if self.app_prefs["Mode"] == "advanced":
@@ -1741,7 +2115,7 @@ class MiniGUI(QMainWindow):
         if self.app_prefs["CLI"]:
             app_cli_action.setChecked(True)
 
-        # Actions status tips
+        # Action status tips
         new_action.setStatusTip("Create a new project")
         open_action.setStatusTip("Open an existing project")
         save_action.setStatusTip("Save the current project")
@@ -1752,7 +2126,7 @@ class MiniGUI(QMainWindow):
         app_cli_action.setStatusTip("Use CLI terminal when scene is running or not")
         about_action.setStatusTip("Show information about MiniGUI")
 
-        # Action connecting to functions/events
+        # Action connections to functions & events
         new_action.triggered.connect(self.newProject)
         open_action.triggered.connect(self.openProject)
         save_action.triggered.connect(self.saveProject)
@@ -1763,7 +2137,7 @@ class MiniGUI(QMainWindow):
         app_cli_action.toggled.connect(lambda: self.changePreferences(preference="CLI"))
         about_action.triggered.connect(self.showAbout)
 
-        # Action introduction into menus
+        # Action additions to submenus
         file_menu.addAction(new_action)
         file_menu.addAction(open_action)
         file_menu.addAction(save_action)
@@ -1776,19 +2150,19 @@ class MiniGUI(QMainWindow):
         help_menu.addAction(about_action)
 
     def setToolBarGUI(self):
-        """Tool bar setting"""
+        """Organises the main window's tool bar"""
         # Assignation
         self.addToolBar(self.tool_bar)
 
-        # Tool bar initialization
+        # Tool bar properties modifications
         self.tool_bar.setMovable(False)
         self.tool_bar.setIconSize(QSize(50, 50))
 
-        # Setting up tools
+        # Introduction of tools into the bar
         button_id = 1
         images = imagesMiniGUI()
         for button in images:
-            # Creation of button
+            # Button creation
             b = QToolButton()
             b.setCheckable(True)
             b.setText(str(button))
@@ -1796,12 +2170,19 @@ class MiniGUI(QMainWindow):
             b.setIcon(QIcon(images[button]))
             b.setToolButtonStyle(Qt.ToolButtonIconOnly)
 
-            # Little spacer for aesthetic reason
-            if button == "Select":
+            if button not in ["Select", "Delete"]:
+                # Status tip only for adding elements button
+                b.setStatusTip("Adds a " + str(button).lower() + " to the scene")
+            elif button == "Select":
+                # Little spacer for aesthetic reason
                 little_spacer = QWidget()
                 little_spacer.setFixedWidth(100)
                 self.tool_bar.addWidget(little_spacer)
+                # Button modification
                 b.setChecked(True)
+                b.setStatusTip("Allows interaction with elements in the scene")
+            elif button == "Delete":
+                b.setStatusTip("Deletes an element of the scene")
 
             # Adding button to tool bar and button group
             self.tool_bar.addWidget(b)
@@ -1809,52 +2190,48 @@ class MiniGUI(QMainWindow):
             button_id = button_id + 1
 
         # Connecting button group with method
-        self.tool_buttons.buttonClicked.connect(lambda: self.manageTools(self.tool_buttons.checkedButton().text()))
+        self.tool_buttons.buttonClicked.connect(lambda: self.setCurrentTool(self.tool_buttons.checkedButton().text()))
 
-        # Big spacer for aesthetic purposes
+        # Big spacer for aesthetic purpose
         big_spacer = QWidget()
         big_spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         self.tool_bar.addWidget(big_spacer)
 
-        # Button related to Mininet action
-        net_button = QToolButton()
-        net_button.setText("Start")
-        net_button.setStyleSheet("color: green; height: 50px; width: 60px; font: bold")
-        net_button.clicked.connect(lambda: self.accessNet())
-        self.tool_bar.addWidget(net_button)
-        self.net_button = net_button
+        # Mininet-related button modification
+        self.updateNetButtonStyle()
+        self.net_button.setText("Start")
+        self.net_button.clicked.connect(lambda: self.accessNet())
+        self.tool_bar.addWidget(self.net_button)
 
         # Choosing "Select" tool as default
-        self.manageTools("Select")
+        self.setCurrentTool("Select")
 
-    # Auxiliary functions
-
-    def enableMenuAndToolBar(self):
-        """This function enables both menu and tool bar"""
-        self.menu_bar.setEnabled(True)
-        self.manageTools(self.tool_buttons.checkedButton().text())
-        for button in self.tool_buttons.buttons():
-            button.setEnabled(True)
+    # Main window modifying functions
 
     def disableMenuAndToolBar(self):
-        """This function disables both menu and tool bar"""
-        self.manageTools("Select")
+        """Disables both menu and tool bar"""
+        self.setCurrentTool("Select")
         self.menu_bar.setEnabled(False)
         for button in self.tool_buttons.buttons():
             button.setEnabled(False)
 
-    def manageTools(self, tool_name):
-        """Method to check up the current tool and manage the buttons"""
+    def enableMenuAndToolBar(self):
+        """Enables both menu and tool bar"""
+        self.menu_bar.setEnabled(True)
+        self.setCurrentTool(self.tool_buttons.checkedButton().text())
+        for button in self.tool_buttons.buttons():
+            button.setEnabled(True)
+
+    def setCurrentTool(self, tool_name):
+        """Sets up the scene's current tool
+
+        :param tool_name: name of the selected tool
+        :type tool_name: str
+        """
         self.scene.current_tool = tool_name
 
-    def updateToolBarIcons(self):
-        """This function updates the icon for each tool"""
-        images = imagesMiniGUI()
-        for button in self.tool_buttons.buttons():
-            button.setIcon(QIcon(images[button.text()]))
-
     def updateNetButtonStyle(self):
-        """This function updates the style of the Mininet action button"""
+        """Updates the style of the Mininet-related button"""
         if APP_THEME == "light" and self.net is None:
             self.net_button.setStyleSheet("color: green; height: 50px; width: 60px; font: bold")
         elif APP_THEME == "light" and self.net is not None:
@@ -1867,7 +2244,7 @@ class MiniGUI(QMainWindow):
                                           "hover { background-color: rgb(53, 53, 53)}")
 
     def updateNetIndicators(self):
-        """This function update the information shown in the status bar related to Mininet state"""
+        """Updates the information shown in the status bar related to Mininet status"""
         if self.net is None:
             self.net_indicators["Text"].setText("Mininet network is not active")
             self.net_indicators["Color"].setStyleSheet("background-color: red")
@@ -1875,12 +2252,23 @@ class MiniGUI(QMainWindow):
             self.net_indicators["Text"].setText("Mininet network is active!")
             self.net_indicators["Color"].setStyleSheet("background-color: green")
 
+    def updateToolBarIcons(self):
+        """Updates the icon for each tool, according to app's theme"""
+        images = imagesMiniGUI()
+        for button in self.tool_buttons.buttons():
+            button.setIcon(QIcon(images[button.text()]))
+
     # Scene-related functions
 
     def modifiedSceneDialog(self):
-        """
-        This function's objective is to warn the user that his/her current project has not been saved and lets the
-        user to decide to save it, continue without saving or cancelling the action
+        """Dialog with important information for the user
+
+        Creates a dialog, warns the user that his/her current project has
+        not been saved and enables the decision to save it, continue
+        without saving or cancel the action
+
+        :returns: dialog with information
+        :rtype: QMessageBox
         """
         dialog = QMessageBox(self)
         dialog.setTextFormat(Qt.RichText)
@@ -1893,16 +2281,16 @@ class MiniGUI(QMainWindow):
         return dialog.exec()
 
     def clearProject(self):
-        """This function clears the scene and the project related parameters"""
-        # Main window parameters
-        self.file = None
-        self.app_prefs["ProjectPath"] = ""
+        """Clears the scene and its internal parameters"""
+        # Main window cleaning
+        self.app_prefs["LastProjectPath"] = self.project_path
         self.setWindowTitle("MiniGUI")
+        self.project_path = None
 
-        # Scene parameters
+        # Scene cleaning
         self.scene.clear()
-        self.scene.sceneNodes.clear()
-        self.scene.sceneLinks.clear()
+        self.scene.scene_nodes.clear()
+        self.scene.scene_links.clear()
         self.scene.scene_modified = False
         self.scene.default_ip_last = 1
         self.scene.default_ip = self.scene.default_ip_base + str(self.scene.default_ip_last)
@@ -1910,7 +2298,7 @@ class MiniGUI(QMainWindow):
             self.scene.item_count[tool] = 0
 
     def newProject(self):
-        """This function creates a new project"""
+        """Creates a new project"""
         if self.scene.scene_modified:
             result = self.modifiedSceneDialog()
             if result == QMessageBox.Save:
@@ -1922,6 +2310,7 @@ class MiniGUI(QMainWindow):
 
     def openProject(self):
         """This function opens a previous existing project"""
+        # Modified scene checking
         if self.scene.scene_modified:
             result = self.modifiedSceneDialog()
             if result == QMessageBox.Save:
@@ -1929,59 +2318,71 @@ class MiniGUI(QMainWindow):
             elif result == QMessageBox.Cancel:
                 return
 
-        # Getting directory of last opened project
-        if not self.app_prefs["ProjectPath"]:
+        # Retrieval of last opened project (if done)
+        if not self.app_prefs["LastProjectPath"]:
             directory = os.getcwd()
         else:
-            directory = os.path.dirname(str(self.app_prefs["ProjectPath"]))
+            directory = os.path.dirname(str(self.app_prefs["LastProjectPath"]))
 
-        dialogfilename = QFileDialog.getOpenFileName(self, "Open file", directory,
-                                                     "Mininet topology (*.mn);;All files (*)", "")
+        # New dialog to let the user choose the project to open
+        file_path = QFileDialog.getOpenFileName(self, "Open file", directory,
+                                                "Mininet topology (*.mn);;All files (*)", "")
 
-        if dialogfilename[0] != "":
-            file = open(str(dialogfilename[0]), "r")
+        # File and format checking
+        if file_path[0] != "":
+            project_file = open(str(file_path[0]), "r")
             try:
-                topology_data = json.load(file)
+                topology_data = json.load(project_file)
             except json.JSONDecodeError:
-                return None
+                dialog = QMessageBox()
+                dialog.setIcon(QMessageBox.Warning)
+                dialog.setTextFormat(Qt.RichText)
+                dialog.setText("<b>Error decoding JSON format</b>")
+                dialog.setInformativeText("This file does not have a JSON format."
+                                          "Please, fix the issue and try again")
+                dialog.exec()
+                return
             else:
                 self.clearProject()
-                self.file = str(dialogfilename[0])
-                self.app_prefs["ProjectPath"] = str(dialogfilename[0])
-                self.setWindowTitle("MiniGUI - " + str(dialogfilename[0]).split("/")[-1])
+                self.project_path = str(file_path[0])
+                self.setWindowTitle("MiniGUI - " + str(file_path[0]).split("/")[-1])
                 self.scene.loadScene(topology_data)
 
     def saveProject(self):
-        """This function allows the user to store project information in an external file"""
+        """Saves the project information in an external file"""
+        # Checking the action that triggered the function
         try:
             sender_text = self.sender().text()
         except AttributeError:
             sender_text = ""
 
-        if self.file is None or sender_text == "Save as":
-            dialogfilename = QFileDialog.getSaveFileName(self, "Save file as", os.getcwd(),
-                                                         "Mininet topology (*.mn);;All files (*)", "")
+        if self.project_path is None or sender_text == "Save as":
+            result = QFileDialog.getSaveFileName(self, "Save file as", os.getcwd(),
+                                                 "Mininet topology (*.mn);;All files (*)", "")
 
-            if dialogfilename[0] != "":
-                filepath = str(dialogfilename[0])
-                if dialogfilename[1].startswith("Mininet") and not dialogfilename[0].endswith(".mn"):
-                    filepath = filepath + ".mn"
+            if result[0]:
+                file_path = str(result[0])
+                if result[1].startswith("Mininet") and not result[0].endswith(".mn"):
+                    file_path = file_path + ".mn"
 
-                self.setWindowTitle("MiniGUI - " + filepath.split("/")[-1])
-                self.app_prefs["ProjectPath"] = filepath
-                self.file = filepath
+                self.setWindowTitle("MiniGUI - " + file_path.split("/")[-1])
+                self.app_prefs["LastProjectPath"] = file_path
+                self.project_path = file_path
             else:
                 return
 
-        file = open(self.file, "w")
-        file_dictionary = self.scene.saveScene()
-        file.write(json.dumps(file_dictionary, sort_keys=True, indent=4, separators=(',', ':')))
-        file.close()
+        project_file = open(self.project_path, "w")
+        json_file_dictionary = self.scene.saveScene()
+        project_file.write(json.dumps(json_file_dictionary, sort_keys=True, indent=4, separators=(',', ':')))
+        project_file.close()
 
     # Mininet-related functions
 
     def emptySceneDialog(self):
-        """Simple dialog to remind the user that the scene is empty"""
+        """Creates a dialog to remind that the scene is empty
+
+        :rtype: QMessageBox
+        """
         dialog = QMessageBox(self)
         dialog.setTextFormat(Qt.RichText)
         dialog.setText("<b>Error! Scene is empty</b>")
@@ -1991,15 +2392,17 @@ class MiniGUI(QMainWindow):
         return dialog.exec()
 
     def buildNodes(self):
-        """This function creates the Mininet node objects"""
-        for node in self.scene.sceneNodes:
+        """Builds the Mininet node objects and adds them to the network"""
+        for node in self.scene.scene_nodes:
+            # Extraction of node's information
             node_addr = None
-            node_name = self.scene.sceneNodes[node].node_name
-            node_type = self.scene.sceneNodes[node].node_type
-            node_properties = self.scene.sceneNodes[node].properties
+            node_name = self.scene.scene_nodes[node].node_name
+            node_type = self.scene.scene_nodes[node].node_type
+            node_properties = self.scene.scene_nodes[node].properties
             if node_type != "Switch":
                 node_addr = str(node_properties['IP']) + "/" + str(node_properties['PrefixLen'])
 
+            # Addition of nodes to the network
             if node_type == "Host":
                 self.net.addHost(node_name, cls=None, ip=node_addr)
             elif node_type == "Router":
@@ -2007,23 +2410,24 @@ class MiniGUI(QMainWindow):
             elif node_type == "Switch":
                 self.net.addSwitch(node_name, cls=None)
 
-        # If no controller added and advanced mode is selected, one by default is introduced
+        # If no controller added and advanced mode is selected, one is introduced by default
         if self.app_prefs["Mode"] == "advanced" and not self.net.controllers:
             self.net.addController('c0')
 
     def buildLinks(self):
-        """This function creates the Mininet link objects between nodes"""
-        for link in self.scene.sceneLinks:
-            nodes_linked = self.scene.sceneLinks[link].nodes
-            if self.scene.sceneLinks[link].isLinkUp():
+        """Builds the Mininet link objects between nodes"""
+        for link in self.scene.scene_links:
+            # Extraction of link's information
+            nodes_linked = self.scene.scene_links[link].nodes
+            if self.scene.scene_links[link].isLinkUp():
                 link_status = "up"
             else:
                 link_status = "down"
 
-            # Retrieving scene nodes to build link
-            link_name = self.scene.sceneLinks[link].link_name
-            node_1 = self.scene.sceneNodes[nodes_linked[0]]
-            node_2 = self.scene.sceneNodes[nodes_linked[1]]
+            # Retrieval of scene nodes to build link
+            link_name = self.scene.scene_links[link].link_name
+            node_1 = self.scene.scene_nodes[nodes_linked[0]]
+            node_2 = self.scene.scene_nodes[nodes_linked[1]]
 
             # Initialization
             two_switches_linked = False
@@ -2035,8 +2439,8 @@ class MiniGUI(QMainWindow):
             elif node_1.node_type != "Switch" and node_2.node_type == "Switch":
                 one_switch_linked = True
             elif node_1.node_type == "Switch" and node_2.node_type != "Switch":
-                node_1 = self.scene.sceneNodes[nodes_linked[1]]
-                node_2 = self.scene.sceneNodes[nodes_linked[0]]
+                node_1 = self.scene.scene_nodes[nodes_linked[1]]
+                node_2 = self.scene.scene_nodes[nodes_linked[0]]
                 one_switch_linked = True
 
             # 1st node information
@@ -2067,11 +2471,11 @@ class MiniGUI(QMainWindow):
                                  intfName1=str(node_1_link_intf), params1={'ip': str(node_1_link_ip)},
                                  intfName2=str(node_2_link_intf), params2={'ip': str(node_2_link_ip)})
 
+            # Configuration of link's status
             self.net.configLinkStatus(nodes_linked[0], nodes_linked[1], link_status)
 
     def startNet(self):
-        """This function is used to start Mininet"""
-
+        """Builds the Mininet network, starts it and disables scene modification"""
         # Net creation and start
         self.net = Mininet(topo=None, build=False)
         self.buildNodes()
@@ -2079,7 +2483,7 @@ class MiniGUI(QMainWindow):
         self.net.build()
         self.net.start()
 
-        # Scene modification
+        # Main window and scene modification
         self.updateNetIndicators()
         self.disableMenuAndToolBar()
         self.scene.net_running = True
@@ -2091,9 +2495,9 @@ class MiniGUI(QMainWindow):
 
         # If basic mode has been selected, commands must be executed to inicialice Mininet correctly
         if self.app_prefs["Mode"] == "basic":
-            for node in self.scene.sceneNodes:
-                if self.scene.sceneNodes[node].node_type == "Switch":
-                    switch_name = self.scene.sceneNodes[node].node_name
+            for node in self.scene.scene_nodes:
+                if self.scene.scene_nodes[node].node_type == "Switch":
+                    switch_name = self.scene.scene_nodes[node].node_name
                     subprocess.run(['ovs-ofctl', 'add-flow', str(switch_name), 'action=normal'])
 
         # CLI creation
@@ -2103,8 +2507,7 @@ class MiniGUI(QMainWindow):
             self.thread_cli.start()
 
     def stopNet(self):
-        """This function stops the Mininet execution"""
-
+        """Stops the Mininet execution and enables back scene modification"""
         # XTerm cleanse
         cleanUpScreens()
 
@@ -2114,13 +2517,14 @@ class MiniGUI(QMainWindow):
         self.net.stop()
         self.net = None
 
-        # Scene modification
+        # Main window and scene modification
         self.updateNetIndicators()
         self.enableMenuAndToolBar()
         self.scene.net_running = False
 
     def accessNet(self):
-        """THis function starts/stops Mininet execution and updates its related button accordingly"""
+        """Starts/stops Mininet execution and updates Mininet-related button accordingly"""
+        # Mininet status checking
         if self.net_button.text() == "Start":
             if not self.scene.items():
                 self.emptySceneDialog()
@@ -2132,13 +2536,19 @@ class MiniGUI(QMainWindow):
             self.stopNet()
             self.net_button.setText("Start")
 
+        # Mininet-related button update
         self.updateNetButtonStyle()
 
-    def updateNetNode(self, node):
-        """This function updates Mininet node's information when simulation is running"""
+    def updateNetNodeInterfaces(self, node):
+        """Updates Mininet node's interface information when simulation is running
+
+        :param node: object with node information
+        :type node: NodeGUI
+        """
         if self.net is None and not isinstance(node, NodeGUI):
             return
 
+        # Retrieval of Mininet node
         net_node = self.net.nameToNode[node.node_name]
 
         # IP address update
@@ -2146,69 +2556,16 @@ class MiniGUI(QMainWindow):
             intf_addr = node.properties["eth_intfs"][intf]
             net_node.cmd("ifconfig " + str(intf) + " " + str(intf_addr))
 
-    def updateNetLink(self, link):
-        """This function updates Mininet link's information when simulation is running"""
-        if self.net is None and not isinstance(link, LinkGUI):
-            return
+    def updateNetNodeRoutingTable(self, node, command):
+        """Updates Mininet node's routing table sending a command and gets its output.
 
-        if link.isLinkUp():
-            link_status = "up"
-        else:
-            link_status = "down"
-
-        link_nodes = link.nodes
-        self.net.configLinkStatus(link_nodes[0], link_nodes[1], link_status)
-
-    def updateSceneInfo(self):
-        """This function allows user to update the scene information with Mininet output"""
-        if self.net is None:
-            return
-
-        for node in self.scene.sceneNodes:
-            if self.scene.sceneNodes[node].node_type != "Switch":
-                # Initialization
-                first_intf = True
-                node_intfs = self.scene.sceneNodes[node].properties["eth_intfs"]
-                net_node = self.net.nameToNode[self.scene.sceneNodes[node].node_name]
-
-                # Interface information (IP address, netmask)
-                for intf in node_intfs:
-                    try:
-                        output = net_node.cmdPrint("ip addr show dev " + str(intf))
-                    except AssertionError:
-                        pass
-                    else:
-                        new_ip = output.split("inet ")[1].split("/")[0]
-                        new_mask = output.split(" brd")[1].split("/")[-1]
-                        self.scene.sceneNodes[node].properties["eth_intfs"][intf] = (str(new_ip) + "/" + str(new_mask))
-                        if first_intf:
-                            self.scene.sceneNodes[node].properties["IP"] = new_ip
-                            self.scene.sceneNodes[node].properties["PrefixLen"] = new_mask
-                            first_intf = False
-
-                # Scene modification
-                self.scene.sceneNodes[node].changeSceneIpTags()
-                self.scene.updateSceneLinks(self.scene.sceneNodes[node])
-
-        # Link state (up or down)
-        for link in self.scene.sceneLinks:
-            node_name = self.scene.sceneLinks[link].nodes[0]
-            intf_name = self.scene.sceneNodes[node_name].links[link]
-            net_node = self.net.nameToNode[node_name]
-            try:
-                output = str(net_node.cmdPrint("ethtool " + str(intf_name)))
-            except AssertionError:
-                pass
-            else:
-                if output.split("Link detected: ")[1].split("\r\n")[0] == "yes":
-                    self.scene.sceneLinks[link].setLinkState(is_up=True)
-                else:
-                    self.scene.sceneLinks[link].setLinkState(is_up=False)
-
-        self.scene.scene_modified = True
-
-    def updateRoutingTable(self, node, command):
-        """This function sends an update command to node and gets its output"""
+        :param node: object with node information
+        :type node: NodeGUI
+        :param command: command to be sent to Mininet
+        :type command: str
+        :returns: command output or None
+        :rtype: str or None
+        """
         if self.net is None or not isinstance(node, NodeGUI):
             return
 
@@ -2219,8 +2576,14 @@ class MiniGUI(QMainWindow):
         else:
             return None
 
-    def getRoutingTable(self, node=None):
-        """This function retrieves the routing table for hosts and routers"""
+    def getNetNodeRoutingTable(self, node=None):
+        """Retrieves the routing table for hosts and routers
+
+        :param node: reference to node object
+        :type node: NodeGUI
+        :returns: dictionary empty or with tabulated data
+        :rtype: dict
+        """
         if self.net is None or not isinstance(node, NodeGUI):
             return
 
@@ -2258,13 +2621,20 @@ class MiniGUI(QMainWindow):
         return output
 
     def getSwitchStoredRoutes(self, node=None):
-        """This function returns the routing table of hosts and switch"""
+        """Returns the routing table of hosts and switch
+
+        :param node: reference to node object
+        :type node: NodeGUI
+        :returns: dictionary empty or with tabulated data
+        :rtype: dict
+        """
         if self.net is None or not isinstance(node, NodeGUI) or node.node_type != "Switch":
             return
 
         # Command execution to obtain switch's routing table
         proc = subprocess.Popen(['ovs-appctl', 'fdb/show', str(node.node_name)],
-                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                universal_newlines=True)
         (result, err) = proc.communicate()
 
         # Output checking
@@ -2289,25 +2659,97 @@ class MiniGUI(QMainWindow):
 
         return output
 
-    def xterm(self, name=None):
-        """This function is used to call a personal XTerm for an specific node"""
-        if self.net is None or name is None:
+    def updateNetLinkStatus(self, link):
+        """Updates Mininet link's status information when simulation is running
+
+        :param link: object with link information
+        :type link: LinkGUI
+        """
+        if self.net is None and not isinstance(link, LinkGUI):
             return
 
-        try:
-            node = self.scene.sceneNodes[name]
-        except KeyError:
+        # Retrieving link's status
+        if link.isLinkUp():
+            link_status = "up"
+        else:
+            link_status = "down"
+
+        # Net link state update
+        link_nodes = link.nodes
+        self.net.configLinkStatus(link_nodes[0], link_nodes[1], link_status)
+
+    def updateSceneInfo(self):
+        """Updates the scene information with Mininet output automatically when triggered"""
+        if self.net is None:
             return
 
+        for node in self.scene.scene_nodes:
+            if self.scene.scene_nodes[node].node_type != "Switch":
+                # Initialization
+                first_intf = True
+                node_intfs = self.scene.scene_nodes[node].properties["eth_intfs"]
+                net_node = self.net.nameToNode[self.scene.scene_nodes[node].node_name]
+
+                # Interface information (IP address, netmask)
+                for intf in node_intfs:
+                    try:
+                        output = net_node.cmdPrint("ip addr show dev " + str(intf))
+                    except AssertionError:
+                        pass
+                    else:
+                        new_ip = output.split("inet ")[1].split("/")[0]
+                        new_mask = output.split(" brd")[1].split("/")[-1]
+                        self.scene.scene_nodes[node].properties["eth_intfs"][intf] = (str(new_ip) + "/" + str(new_mask))
+                        if first_intf:
+                            self.scene.scene_nodes[node].properties["IP"] = new_ip
+                            self.scene.scene_nodes[node].properties["PrefixLen"] = new_mask
+                            first_intf = False
+
+                # Scene modification
+                self.scene.scene_nodes[node].changeSceneIpTags()
+                self.scene.updateSceneLinks(self.scene.scene_nodes[node])
+
+        # Link state (up or down)
+        for link in self.scene.scene_links:
+            node_name = self.scene.scene_links[link].nodes[0]
+            intf_name = self.scene.scene_nodes[node_name].links[link]
+            net_node = self.net.nameToNode[node_name]
+            try:
+                output = str(net_node.cmdPrint("ethtool " + str(intf_name)))
+            except AssertionError:
+                pass
+            else:
+                if output.split("Link detected: ")[1].split("\r\n")[0] == "yes":
+                    self.scene.scene_links[link].setLinkState(is_up=True)
+                else:
+                    self.scene.scene_links[link].setLinkState(is_up=False)
+
+        self.scene.scene_modified = True
+
+    def xterm(self, node=None):
+        """Creates a personal XTerm for an specific host or router
+
+        :param node: reference to node object
+        :type node: NodeGUI
+        """
+        # Checking if net is available and name is not none
+        if self.net is None or node is None:
+            return
+
+        # Obtaining information from node object and creating xterm
         node_name = node.node_name
         node_type = node.node_type
         term = makeTerm(self.net.nameToNode[node_name], node_type)
         self.net.terms += term
 
-    # Event handling functions
+    # Event handlers
 
     def closeEvent(self, event):
-        """This function is called when main window (application) is about to be closed"""
+        """It is called when main window (application) is about to be closed
+
+        :param event: application's event
+        :type event: QEvent
+        """
         if self.scene.scene_modified:
             result = self.modifiedSceneDialog()
             if result == QMessageBox.Save:
@@ -2318,34 +2760,50 @@ class MiniGUI(QMainWindow):
         self.writePreferences()
 
     def showEvent(self, event):
-        """This function is called when the main window (application) is shown for the first time"""
+        """It is called when the main window (application) is shown for the first time
+
+        :param event: application's event
+        :type event: QEvent
+        """
         self.canvas.setSceneRect(QRectF(self.canvas.viewport().rect()))
 
     def resizeEvent(self, event):
-        """This function is called when the main window (application) is resized"""
+        """It is called when the main window (application) is resized
+
+        :param event: application's event
+        :type event: QEvent
+        """
         self.canvas.setSceneRect(QRectF(self.canvas.viewport().rect()))
 
     def changeEvent(self, event):
-        """This function is called when an external window parameter is changed (like palette)"""
-        if event.type() == QEvent.PaletteChange and self.tool_buttons:
+        """It is called when an external window parameter is changed (like palette)
+
+        :param event: application's event
+        :type event: QEvent
+        """
+        if event.type() == QEvent.PaletteChange:
             self.updateToolBarIcons()
             self.updateNetButtonStyle()
         else:
             QWidget.changeEvent(self, event)
 
-    # Preferences functions
+    # User preference functions
 
     def writePreferences(self):
-        """This function saves the user's preferences in a external configuration file"""
+        """Saves the user's preferences in a external configuration file"""
         settings = QSettings('MiniGUI', 'settings')
         settings.setValue("AppTheme", str(APP_THEME))
         settings.setValue("AppMode", str(self.app_prefs["Mode"]))
         settings.setValue("AppCLI", str(self.app_prefs["CLI"]))
-        if self.app_prefs["ProjectPath"]:
-            settings.setValue("ProjectPath", str(self.app_prefs["ProjectPath"]))
+        if self.app_prefs["LastProjectPath"]:
+            settings.setValue("ProjectPath", str(self.app_prefs["LastProjectPath"]))
 
     def changePreferences(self, preference=None):
-        """This function allows the user to change some preferences"""
+        """Changes the user's preferences
+
+        :param preference: option to change one of the app's preferences
+        :type preference: str
+        """
         if preference == "theme":
             global APP_THEME
             if APP_THEME == "light":
@@ -2364,10 +2822,10 @@ class MiniGUI(QMainWindow):
             else:
                 self.app_prefs["CLI"] = True
 
-    # Pop-up related functions
+    # Information function
 
     def showAbout(self):
-        """This function creates a new dialog displaying the information about the application itself"""
+        """Displays a new dialog with information about the application"""
         about = QDialog(self)
         about.setWindowTitle("About MiniGUI")
 
@@ -2385,7 +2843,7 @@ class MiniGUI(QMainWindow):
         label1.setPixmap(about_icon_resize)
 
         label2 = QLabel(about)
-        label2.setText("MiniGUI: network graphical editor, made specifically for you\n\n"
+        label2.setText("MiniGUI: Graphical User Interface editor for Mininet\n\n"
                        "Author: Daniel Polo Álvarez (d.poloa@alumnos.urjc.es)\n\n"
                        "Universidad Rey Juan Carlos (URJC)")
 
@@ -2405,7 +2863,11 @@ class MiniGUI(QMainWindow):
 
 
 def imagesMiniGUI():
-    """This function returns a set of images depending on the mode selected: bright or dark"""
+    """Returns a set of images depending on the mode selected: light or dark
+
+    :returns: dictionary with the images path
+    :rtype: dict
+    """
     if APP_THEME == "light":
         return {
             "Host": "./images/laptop.png",
@@ -2427,7 +2889,7 @@ def imagesMiniGUI():
 
 
 def changeAppPalette():
-    """This function changes the application palette according to the selected theme"""
+    """Changes the application palette according to the selected theme"""
     if APP_THEME == "light":
         palette = app.style().standardPalette()
         app.setPalette(palette)
@@ -2450,16 +2912,18 @@ def changeAppPalette():
 
 
 if __name__ == '__main__':
-    # Checking that program is executed as superuser
+    # Checking that the program is executed with superuser privileges
     if os.getuid() != 0:
         sys.exit('ERROR: MiniGUI must run as root. Use sudo ./MiniGUI.py')
     elif not os.path.isdir("/tmp/runtime-root"):
         os.makedirs("/tmp/runtime-root")
-    # Environmental variable
+
+    # Creation of environmental variable
     os.environ["XDG_RUNTIME_DIR"] = "/tmp/runtime-root"
-    # App initialization
+
+    # Application initialization
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
-    gui_app = MiniGUI()
-    gui_app.show()
+    minigui = MiniGUI()
+    minigui.show()
     sys.exit(app.exec())

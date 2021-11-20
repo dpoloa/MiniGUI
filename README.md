@@ -8,6 +8,15 @@ los elementos básicos: hubs, switches, routers y ordenadores/hosts (por ahora, 
 el futuro). Este programa está escrito en Python, y usa como paquete gráfico Qt, con su adaptación al lenguaje usado 
 como PyQt5.
 ## Historial de versiones
+### Versión 01.00.00
+¡La versión 01.00.00 definitiva de este Trabajo de Fin de Grado ya está aquí!
+
+En este nuevo paquete se encuentran todos los cambios vistos hasta ahora en las versiones anteriores, además de 
+introducir una pequeña documentación de lo que hace cada clase y cada método. También se han redefinido algunas
+variables y nombres de métodos/clases con el objetivo de hacerlo todo lo más claro posible.
+
+Espero que os guste y que os sirva en el futuro para construir vuestras propias redes de ordenadores, además de seguir
+con este proyecto y dotarle de más funcionalidades.
 #### Versión 00.01.08
 En esta versión se han introducido los siguientes cambios:
 * Se ha modificado la apariencia de los menús contextuales de los nodos. Ahora aparecen listadas todas las opciones en 
