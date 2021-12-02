@@ -38,6 +38,7 @@ import os
 import re
 
 # Global application variables
+MINIGUI_VERSION = '01.00.00'
 DEFAULT_TIMER = 5.0
 APP_THEME = "light"
 
@@ -1822,7 +1823,7 @@ class SceneGUI(QGraphicsScene):
 
         return True
 
-    def checkFeasibleLink(self, dest_item):
+    def isFeasibleLink(self, dest_item):
         """Checks if the connection between two items is possible
 
         :param dest_item: item selected at the end of the linking process
@@ -1907,6 +1908,7 @@ class SceneGUI(QGraphicsScene):
         :param event: application's event
         :type event: QGraphicsSceneMouseEvent
         """
+        # Checking if link creation process has been stopped
         if self.new_link is not None:
             self.removeItem(self.new_link)
             self.link_orig_node = None
@@ -1923,7 +1925,7 @@ class SceneGUI(QGraphicsScene):
             item = self.itemAt(event.scenePos(), QTransform())
             if item is not None and not isinstance(item, TagGUI):
                 self.removeSceneItem(item)
-        elif self.current_tool == "Link" and self.new_link is None:
+        elif self.current_tool == "Link":
             item = self.itemAt(event.scenePos(), QTransform())
             if item is not None and isinstance(item, NodeGUI):
                 self.link_orig_node = item
@@ -1952,7 +1954,7 @@ class SceneGUI(QGraphicsScene):
         super().mouseReleaseEvent(event)
         if self.current_tool == "Link" and self.new_link is not None:
             item = self.itemAt(event.scenePos(), QTransform())
-            if item is not None and self.checkFeasibleLink(item):
+            if item is not None and self.isFeasibleLink(item):
                 offset = item.boundingRect().center()
                 self.new_link.updateEndPoint(item.scenePos().x() + offset.x(), item.scenePos().y() + offset.y())
                 self.selectSceneItem(self.new_link)
@@ -2099,6 +2101,7 @@ class MiniGUI(QMainWindow):
         new_action.setShortcut("Ctrl+N")
         open_action.setShortcut("Ctrl+O")
         save_action.setShortcut("Ctrl+S")
+        save_as_action.setShortcut("Ctrl+Alt+S")
         quit_action.setShortcut("Ctrl+Q")
         about_action.setShortcut("F1")
 
@@ -2760,7 +2763,7 @@ class MiniGUI(QMainWindow):
         self.writePreferences()
 
     def showEvent(self, event):
-        """It is called when the main window (application) is shown for the first time
+        """It is called when the main window (application) is shown
 
         :param event: application's event
         :type event: QEvent
@@ -2917,6 +2920,9 @@ if __name__ == '__main__':
         sys.exit('ERROR: MiniGUI must run as root. Use sudo ./MiniGUI.py')
     elif not os.path.isdir("/tmp/runtime-root"):
         os.makedirs("/tmp/runtime-root")
+
+    # Information message for user
+    print("Welcome to MiniGUI, version " + str(MINIGUI_VERSION) + "!")
 
     # Creation of environmental variable
     os.environ["XDG_RUNTIME_DIR"] = "/tmp/runtime-root"
