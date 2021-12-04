@@ -1547,8 +1547,6 @@ class SceneGUI(QGraphicsScene):
         line = self.new_link.line()
         orig_node = self.itemAt(line.p1(), QTransform())
         dest_node = self.itemAt(line.p2(), QTransform())
-        if not isinstance(orig_node, NodeGUI) or not isinstance(dest_node, NodeGUI):
-            return
 
         # Link's naming (if needed)
         if name is None:
