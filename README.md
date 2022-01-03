@@ -1,6 +1,6 @@
 # MiniGUI
-Repositorio creado para el TFG de Tecnologías de la Telecomunicación de Daniel Polo Álvarez: MiniGUI (nombre
-provisional), estudiante de la Universidad Rey Juan Carlos.
+Repositorio creado para el TFG de Tecnologías de la Telecomunicación de Daniel Polo Álvarez: MiniGUI, estudiante de 
+la Universidad Rey Juan Carlos.
 ## Objetivo 
 El objetivo de este Trabajo de Fin de Grado es crear una GUI (*Graphical User Interface*, por sus siglas en inglés) o 
 Interfaz Gráfica de Usuario que permita al usuario poder crear una red de arquitectura de ordenadores a su gusto con
